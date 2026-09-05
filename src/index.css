@@ -580,3 +580,23 @@ body {
     flex-direction: column;
   }
 }
+.video-channel-name {
+  margin: 6px 0 2px;
+  color: #606060;
+  font-size: 14px;
+}
+
+.video-stats {
+  margin: 0;
+  color: #606060;
+  font-size: 13px;
+}
+
+.video-card {
+  text-decoration: none;
+  color: inherit;
+}
+
+.video-card:hover .video-thumbnail {
+  opacity: 0.9;
+}
