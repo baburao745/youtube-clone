@@ -11,9 +11,14 @@ function Channel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [channelName, setChannelName] = useState("");
-  const [channelDescription, setChannelDescription] = useState("");
+  const [showVideoForm, setShowVideoForm] = useState(false);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [category, setCategory] = useState("Technology");
+
   const [creating, setCreating] = useState(false);
 
   const token = localStorage.getItem("token");
@@ -27,29 +32,34 @@ function Channel() {
         `http://localhost:5000/api/channels/${id}`
       );
 
-      setChannel(
-        channelResponse.data.channel ||
-          channelResponse.data
-      );
+      const channelData =
+        channelResponse.data.channel || channelResponse.data;
+
+      setChannel(channelData);
 
       const videosResponse = await axios.get(
         "http://localhost:5000/api/videos"
       );
 
       const allVideos =
-        videosResponse.data.videos ||
-        videosResponse.data;
+        videosResponse.data.videos || videosResponse.data;
 
-      const channelVideos = allVideos.filter(
-        (video) =>
-          video.channel?._id === id ||
-          video.channel === id
-      );
+      const channelVideos = allVideos.filter((video) => {
+        const channelId =
+          typeof video.channel === "object"
+            ? video.channel?._id
+            : video.channel;
+
+        return String(channelId) === String(id);
+      });
 
       setVideos(channelVideos);
     } catch (error) {
-      console.error(error);
-      setError("Unable to load channel.");
+      console.error("CHANNEL ERROR:", error);
+      setError(
+        error.response?.data?.message ||
+          "Unable to load channel."
+      );
     } finally {
       setLoading(false);
     }
@@ -59,22 +69,27 @@ function Channel() {
     fetchChannelData();
   }, [id]);
 
-  const handleCreateChannel = async (e) => {
+  const handleCreateVideo = async (e) => {
     e.preventDefault();
 
     if (!token) {
-      alert("Please sign in to create a channel.");
+      alert("Please sign in first.");
       navigate("/login");
       return;
     }
 
-    if (!channelName.trim()) {
-      alert("Channel name is required.");
+    if (!title.trim()) {
+      alert("Video title is required.");
       return;
     }
 
-    if (channelName.trim().length < 3) {
-      alert("Channel name must be at least 3 characters.");
+    if (!videoUrl.trim()) {
+      alert("Video URL is required.");
+      return;
+    }
+
+    if (!thumbnailUrl.trim()) {
+      alert("Thumbnail URL is required.");
       return;
     }
 
@@ -82,10 +97,14 @@ function Channel() {
       setCreating(true);
 
       const response = await axios.post(
-        "http://localhost:5000/api/channels",
+        "http://localhost:5000/api/videos",
         {
-          name: channelName,
-          description: channelDescription
+          title: title.trim(),
+          description: description.trim(),
+          videoUrl: videoUrl.trim(),
+          thumbnailUrl: thumbnailUrl.trim(),
+          channelId: id,
+          category
         },
         {
           headers: {
@@ -94,26 +113,24 @@ function Channel() {
         }
       );
 
-      const newChannel =
-        response.data.channel ||
-        response.data;
+      console.log("VIDEO CREATED:", response.data);
 
-      setChannel(newChannel);
-      setChannelName("");
-      setChannelDescription("");
-      setShowCreateForm(false);
+      alert("Video created successfully!");
 
-      alert("Channel created successfully!");
+      setTitle("");
+      setDescription("");
+      setVideoUrl("");
+      setThumbnailUrl("");
+      setCategory("Technology");
+      setShowVideoForm(false);
 
-      if (newChannel._id) {
-        navigate(`/channel/${newChannel._id}`);
-      }
+      await fetchChannelData();
     } catch (error) {
-      console.error(error);
+      console.error("CREATE VIDEO ERROR:", error);
 
       alert(
         error.response?.data?.message ||
-          "Unable to create channel."
+          "Unable to create video."
       );
     } finally {
       setCreating(false);
@@ -136,115 +153,141 @@ function Channel() {
     );
   }
 
+  if (!channel) {
+    return (
+      <div className="channel-page">
+        <h2>Channel not found</h2>
+      </div>
+    );
+  }
+
   return (
     <div className="channel-page">
-      {channel ? (
-        <>
-          <div className="channel-header">
-            <div className="channel-avatar">
-              {channel.name
-                .charAt(0)
-                .toUpperCase()}
-            </div>
-
-            <div className="channel-details">
-              <h1>{channel.name}</h1>
-
-              <p>
-                {channel.description ||
-                  "Welcome to my channel!"}
-              </p>
-
-              <p>
-                {channel.subscribers || 0} subscribers
-              </p>
-            </div>
-          </div>
-
-          <div className="channel-videos">
-            <h2>Videos</h2>
-
-            {videos.length === 0 ? (
-              <p>No videos uploaded yet.</p>
-            ) : (
-              <div className="channel-video-grid">
-                {videos.map((video) => (
-                  <Link
-                    to={`/video/${video._id}`}
-                    className="channel-video-card"
-                    key={video._id}
-                  >
-                    <img
-                      src={video.thumbnailUrl}
-                      alt={video.title}
-                    />
-
-                    <h3>{video.title}</h3>
-
-                    <p>{video.views} views</p>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        <div>
-          <h1>Create Your Channel</h1>
-
-          {!showCreateForm && (
-            <button
-              onClick={() => setShowCreateForm(true)}
-            >
-              + Create Channel
-            </button>
-          )}
-
-          {showCreateForm && (
-            <form
-              onSubmit={handleCreateChannel}
-              className="channel-form"
-            >
-              <input
-                type="text"
-                placeholder="Channel name"
-                value={channelName}
-                onChange={(e) =>
-                  setChannelName(e.target.value)
-                }
-              />
-
-              <textarea
-                placeholder="Channel description"
-                value={channelDescription}
-                onChange={(e) =>
-                  setChannelDescription(
-                    e.target.value
-                  )
-                }
-              />
-
-              <button
-                type="submit"
-                disabled={creating}
-              >
-                {creating
-                  ? "Creating..."
-                  : "Create Channel"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowCreateForm(false)
-                }
-              >
-                Cancel
-              </button>
-            </form>
-          )}
+      <div className="channel-header">
+        <div className="channel-avatar">
+          {channel.name.charAt(0).toUpperCase()}
         </div>
+
+        <div className="channel-details">
+          <h1>{channel.name}</h1>
+
+          <p>
+            {channel.description ||
+              "Welcome to my channel!"}
+          </p>
+
+          <p>
+            {channel.subscribers || 0} subscribers
+          </p>
+        </div>
+      </div>
+
+      <div className="channel-actions">
+        <button
+          onClick={() =>
+            setShowVideoForm(!showVideoForm)
+          }
+        >
+          {showVideoForm
+            ? "Cancel"
+            : "+ Create Video"}
+        </button>
+      </div>
+
+      {showVideoForm && (
+        <form
+          onSubmit={handleCreateVideo}
+          className="channel-form"
+        >
+          <h2>Create New Video</h2>
+
+          <input
+            type="text"
+            placeholder="Video title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+
+          <textarea
+            placeholder="Video description"
+            value={description}
+            onChange={(e) =>
+              setDescription(e.target.value)
+            }
+          />
+
+          <input
+            type="text"
+            placeholder="Video URL"
+            value={videoUrl}
+            onChange={(e) =>
+              setVideoUrl(e.target.value)
+            }
+          />
+
+          <input
+            type="text"
+            placeholder="Thumbnail URL"
+            value={thumbnailUrl}
+            onChange={(e) =>
+              setThumbnailUrl(e.target.value)
+            }
+          />
+
+          <select
+            value={category}
+            onChange={(e) =>
+              setCategory(e.target.value)
+            }
+          >
+            <option value="Technology">
+              Technology
+            </option>
+            <option value="Education">
+              Education
+            </option>
+            <option value="Music">Music</option>
+            <option value="Gaming">Gaming</option>
+            <option value="Movies">Movies</option>
+            <option value="News">News</option>
+            <option value="Sports">Sports</option>
+            <option value="Other">Other</option>
+          </select>
+
+          <button type="submit" disabled={creating}>
+            {creating
+              ? "Creating..."
+              : "Create Video"}
+          </button>
+        </form>
       )}
+
+      <div className="channel-videos">
+        <h2>Videos</h2>
+
+        {videos.length === 0 ? (
+          <p>No videos uploaded yet.</p>
+        ) : (
+          <div className="channel-video-grid">
+            {videos.map((video) => (
+              <Link
+                to={`/video/${video._id}`}
+                className="channel-video-card"
+                key={video._id}
+              >
+                <img
+                  src={video.thumbnailUrl}
+                  alt={video.title}
+                />
+
+                <h3>{video.title}</h3>
+
+                <p>{video.views} views</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
