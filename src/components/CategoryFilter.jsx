@@ -1,4 +1,7 @@
-function CategoryFilter({ selectedCategory, onCategoryChange }) {
+function CategoryFilter({
+  selectedCategory,
+  onCategoryChange
+}) {
   const categories = [
     "All",
     "Music",
@@ -7,7 +10,7 @@ function CategoryFilter({ selectedCategory, onCategoryChange }) {
     "News",
     "Sports",
     "Technology",
-    "Education",
+    "Education"
   ];
 
   return (
@@ -15,10 +18,15 @@ function CategoryFilter({ selectedCategory, onCategoryChange }) {
       {categories.map((category) => (
         <button
           key={category}
-          className={`category-btn ${
-            selectedCategory === category ? "selected" : ""
-          }`}
-          onClick={() => onCategoryChange(category)}
+          type="button"
+          className={
+            selectedCategory === category
+              ? "category-btn selected"
+              : "category-btn"
+          }
+          onClick={() =>
+            onCategoryChange(category)
+          }
         >
           {category}
         </button>
