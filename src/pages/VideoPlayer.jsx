@@ -22,8 +22,7 @@ function VideoPlayer() {
         `http://localhost:5000/api/videos/${id}`
       );
 
-      const videoData = response.data.video || response.data;
-      setVideo(videoData);
+      setVideo(response.data.video || response.data);
     } catch (error) {
       console.error(error);
       setError("Unable to load video");
@@ -133,6 +132,7 @@ function VideoPlayer() {
       fetchComments();
     } catch (error) {
       console.error(error);
+
       alert(
         error.response?.data?.message ||
           "Unable to add comment."
@@ -180,9 +180,45 @@ function VideoPlayer() {
       fetchComments();
     } catch (error) {
       console.error(error);
+
       alert(
         error.response?.data?.message ||
           "Unable to edit comment."
+      );
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!token) {
+      alert("Please sign in.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this comment?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `http://localhost:5000/api/comments/${commentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      fetchComments();
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        error.response?.data?.message ||
+          "Unable to delete comment."
       );
     }
   };
@@ -313,13 +349,25 @@ function VideoPlayer() {
                       <p>{comment.text}</p>
 
                       {isOwner && (
-                        <button
-                          onClick={() =>
-                            startEditing(comment)
-                          }
-                        >
-                          ✏️ Edit
-                        </button>
+                        <div>
+                          <button
+                            onClick={() =>
+                              startEditing(comment)
+                            }
+                          >
+                            ✏️ Edit
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              handleDeleteComment(
+                                comment._id
+                              )
+                            }
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
                       )}
                     </>
                   )}
