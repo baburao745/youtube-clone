@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+import { Link, useParams } from "react-router-dom";
+import api from "../api/axios.js";
 
 function VideoPlayer() {
   const { id } = useParams();
@@ -8,107 +8,92 @@ function VideoPlayer() {
   const [video, setVideo] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
-
-  const [editingId, setEditingId] = useState(null);
-  const [editingText, setEditingText] = useState("");
-
+  const [editingComment, setEditingComment] = useState(null);
+  const [editText, setEditText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [commentLoading, setCommentLoading] = useState(false);
   const [error, setError] = useState("");
 
   const token = localStorage.getItem("token");
-  const user = JSON.parse(
-    localStorage.getItem("user") || "null"
-  );
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  const fetchVideo = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/videos/${id}`
-      );
+  const getId = (value) => {
+    if (!value) return null;
 
-      setVideo(
-        response.data.video || response.data
-      );
-    } catch (error) {
-      console.error(error);
-      setError("Unable to load video.");
+    if (typeof value === "object") {
+      return value._id || value.id || value.userId || null;
     }
-  };
 
-  const fetchComments = async () => {
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/comments/${id}`
-      );
-
-      setComments(
-        response.data.comments ||
-          response.data
-      );
-    } catch (error) {
-      console.error(error);
-      setComments([]);
-    }
+    return value;
   };
 
   useEffect(() => {
-    const loadVideo = async () => {
-      setLoading(true);
+    const fetchVideo = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-      await fetchVideo();
-      await fetchComments();
+        const [videoResponse, commentsResponse] = await Promise.all([
+          api.get(`/videos/${id}`),
+          api.get(`/comments/${id}`),
+        ]);
 
-      setLoading(false);
+        setVideo(videoResponse.data.video || videoResponse.data);
+        setComments(
+          commentsResponse.data.comments || commentsResponse.data || []
+        );
+      } catch (error) {
+        console.error("VIDEO PAGE ERROR:", error);
+
+        setError(
+          error.response?.data?.message ||
+            "Unable to load this video."
+        );
+      } finally {
+        setLoading(false);
+      }
     };
 
-    loadVideo();
+    fetchVideo();
   }, [id]);
 
   const handleLike = async () => {
     if (!token) {
-      alert("Please sign in to like this video.");
+      alert("Please sign in to like videos.");
       return;
     }
 
     try {
-      await axios.post(
-        `http://localhost:5000/api/videos/${id}/like`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await api.post(`/videos/${id}/like`);
 
-      await fetchVideo();
+      setVideo(response.data.video || response.data);
     } catch (error) {
-      console.error(error);
-      alert("Unable to like video.");
+      console.error("LIKE ERROR:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Unable to like this video."
+      );
     }
   };
 
   const handleDislike = async () => {
     if (!token) {
-      alert("Please sign in to dislike this video.");
+      alert("Please sign in to dislike videos.");
       return;
     }
 
     try {
-      await axios.post(
-        `http://localhost:5000/api/videos/${id}/dislike`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await api.post(`/videos/${id}/dislike`);
 
-      await fetchVideo();
+      setVideo(response.data.video || response.data);
     } catch (error) {
-      console.error(error);
-      alert("Unable to dislike video.");
+      console.error("DISLIKE ERROR:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Unable to dislike this video."
+      );
     }
   };
 
@@ -121,111 +106,94 @@ function VideoPlayer() {
     }
 
     if (!commentText.trim()) {
-      alert("Please enter a comment.");
       return;
     }
 
     try {
-      await axios.post(
-        "http://localhost:5000/api/comments",
-        {
-          text: commentText.trim(),
-          videoId: id
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      setCommentLoading(true);
+
+      const response = await api.post("/comments", {
+        videoId: id,
+        text: commentText.trim(),
+      });
+
+      const newComment = response.data.comment || response.data;
+
+      setComments((previousComments) => [
+        newComment,
+        ...previousComments,
+      ]);
 
       setCommentText("");
-
-      await fetchComments();
     } catch (error) {
-      console.error(error);
+      console.error("ADD COMMENT ERROR:", error);
 
       alert(
         error.response?.data?.message ||
           "Unable to add comment."
       );
+    } finally {
+      setCommentLoading(false);
     }
   };
 
-  const startEditing = (comment) => {
-    setEditingId(comment._id);
-    setEditingText(comment.text);
+  const handleEditComment = (comment) => {
+    setEditingComment(comment._id);
+    setEditText(comment.text);
   };
 
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditingText("");
-  };
-
-  const handleEditComment = async (commentId) => {
-    if (!token) {
-      alert("Please sign in.");
-      return;
-    }
-
-    if (!editingText.trim()) {
-      alert("Comment cannot be empty.");
+  const handleUpdateComment = async (commentId) => {
+    if (!editText.trim()) {
       return;
     }
 
     try {
-      await axios.put(
-        `http://localhost:5000/api/comments/${commentId}`,
-        {
-          text: editingText.trim()
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const response = await api.put(`/comments/${commentId}`, {
+        text: editText.trim(),
+      });
+
+      const updatedComment =
+        response.data.comment || response.data;
+
+      setComments((previousComments) =>
+        previousComments.map((comment) =>
+          comment._id === commentId
+            ? updatedComment
+            : comment
+        )
       );
 
-      cancelEditing();
-
-      await fetchComments();
+      setEditingComment(null);
+      setEditText("");
     } catch (error) {
-      console.error(error);
+      console.error("UPDATE COMMENT ERROR:", error);
 
       alert(
         error.response?.data?.message ||
-          "Unable to edit comment."
+          "Unable to update comment."
       );
     }
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!token) {
-      alert("Please sign in.");
-      return;
-    }
-
-    const confirmDelete = window.confirm(
+    const confirmed = window.confirm(
       "Are you sure you want to delete this comment?"
     );
 
-    if (!confirmDelete) {
+    if (!confirmed) {
       return;
     }
 
     try {
-      await axios.delete(
-        `http://localhost:5000/api/comments/${commentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      await api.delete(`/comments/${commentId}`);
 
-      await fetchComments();
+      setComments((previousComments) =>
+        previousComments.filter(
+          (comment) => comment._id !== commentId
+        )
+      );
     } catch (error) {
-      console.error(error);
+      console.error("DELETE COMMENT ERROR:", error);
 
       alert(
         error.response?.data?.message ||
@@ -236,251 +204,206 @@ function VideoPlayer() {
 
   if (loading) {
     return (
-      <div className="video-player-page">
-        <h2>Loading video...</h2>
+      <div className="video-player-container">
+        <div className="loading-message">
+          Loading video...
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !video) {
     return (
-      <div className="video-player-page">
-        <h2>{error}</h2>
+      <div className="video-player-container">
+        <div className="empty-message">
+          <h2>Video Not Available</h2>
+          <p>
+            {error || "This video could not be found."}
+          </p>
+
+          <Link to="/" className="home-button">
+            Back to Home
+          </Link>
+        </div>
       </div>
     );
   }
 
-  if (!video) {
-    return (
-      <div className="video-player-page">
-        <h2>Video not found.</h2>
-      </div>
-    );
-  }
-
-  const channelId =
-    typeof video.channel === "object"
-      ? video.channel?._id
-      : video.channel;
+  const channelId = getId(video.channel);
 
   return (
-    <div className="video-player-page">
-
-      {/* VIDEO */}
-      <div className="video-player-container">
+    <main className="video-player-container">
+      <div className="main-video">
         <video
           controls
-          className="main-video"
-          src={video.videoUrl}
+          width="100%"
+          poster={video.thumbnailUrl}
         >
+          <source src={video.videoUrl} type="video/mp4" />
           Your browser does not support video playback.
         </video>
       </div>
 
-      {/* TITLE */}
       <h1 className="video-title">
         {video.title}
       </h1>
 
-      {/* VIDEO INFO */}
       <div className="video-meta">
-
-        <div>
-          <p>
-            {video.views || 0} views
-          </p>
-
-          <p>
-            Category:{" "}
-            {video.category || "Other"}
-          </p>
-        </div>
-
-        <div className="video-actions">
-
-          <button onClick={handleLike}>
-            👍 {video.likes || 0}
-          </button>
-
-          <button onClick={handleDislike}>
-            👎 {video.dislikes || 0}
-          </button>
-
-        </div>
-
+        <span>{video.views || 0} views</span>
+        <span>•</span>
+        <span>
+          {video.category || "Other"}
+        </span>
       </div>
 
-      {/* CHANNEL */}
-      <div className="video-channel">
+      <div className="video-actions">
+        <button type="button" onClick={handleLike}>
+          👍 {video.likes || 0}
+        </button>
 
-        <div className="channel-mini-avatar">
-          {video.channel?.name
-            ? video.channel.name
-                .charAt(0)
-                .toUpperCase()
-            : "C"}
-        </div>
+        <button type="button" onClick={handleDislike}>
+          👎 {video.dislikes || 0}
+        </button>
+      </div>
 
-        <div>
-          <strong>
-            {video.channel?.name ||
-              "Unknown Channel"}
-          </strong>
+      {channelId && (
+        <div className="video-channel">
+          <div className="channel-mini-avatar">
+            {video.channel?.name?.charAt(0)?.toUpperCase() || "C"}
+          </div>
 
-          {channelId && (
-            <Link
-              to={`/channel/${channelId}`}
-            >
-              <p>View Channel</p>
+          <div>
+            <Link to={`/channel/${channelId}`}>
+              <strong>
+                {video.channel?.name || "Unknown Channel"}
+              </strong>
             </Link>
-          )}
+          </div>
         </div>
+      )}
 
-      </div>
-
-      {/* DESCRIPTION */}
       <div className="video-description">
-
         <h3>Description</h3>
-
         <p>
           {video.description ||
-            "No description available."}
+            "No description available for this video."}
         </p>
-
       </div>
 
-      {/* COMMENTS */}
-      <div className="comments-section">
-
+      <section className="comments-section">
         <h2>
           Comments ({comments.length})
         </h2>
 
         <form
-          onSubmit={handleAddComment}
           className="comment-form"
+          onSubmit={handleAddComment}
         >
           <input
             type="text"
-            placeholder="Add a comment..."
+            placeholder={
+              token
+                ? "Add a comment..."
+                : "Sign in to comment"
+            }
             value={commentText}
             onChange={(e) =>
               setCommentText(e.target.value)
             }
+            disabled={!token || commentLoading}
           />
 
-          <button type="submit">
-            Comment
+          <button
+            type="submit"
+            disabled={!token || commentLoading}
+          >
+            {commentLoading ? "Adding..." : "Comment"}
           </button>
         </form>
 
-        {comments.length === 0 ? (
-          <p>No comments yet.</p>
-        ) : (
-          <div className="comments-list">
-
-            {comments.map((comment) => {
-
-              const commentUserId =
-                typeof comment.user === "object"
-                  ? comment.user?._id
-                  : comment.user;
-
-              const currentUserId =
-                user?.id ||
-                user?._id ||
-                user?.userId;
-
-              const isOwner =
-                user &&
-                String(commentUserId) ===
-                  String(currentUserId);
-
-              return (
-                <div
-                  className="comment-card"
-                  key={comment._id}
-                >
-
-                  <strong>
-                    {comment.user?.username ||
-                      "User"}
-                  </strong>
-
-                  {editingId ===
-                  comment._id ? (
-                    <div className="comment-edit">
-
-                      <input
-                        type="text"
-                        value={editingText}
-                        onChange={(e) =>
-                          setEditingText(
-                            e.target.value
-                          )
-                        }
-                      />
-
-                      <button
-                        onClick={() =>
-                          handleEditComment(
-                            comment._id
-                          )
-                        }
-                      >
-                        Save
-                      </button>
-
-                      <button
-                        onClick={cancelEditing}
-                      >
-                        Cancel
-                      </button>
-
-                    </div>
-                  ) : (
-                    <>
-                      <p>{comment.text}</p>
-
-                      {isOwner && (
-                        <div className="comment-buttons">
-
-                          <button
-                            onClick={() =>
-                              startEditing(
-                                comment
-                              )
-                            }
-                          >
-                            ✏️ Edit
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleDeleteComment(
-                                comment._id
-                              )
-                            }
-                          >
-                            🗑️ Delete
-                          </button>
-
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                </div>
-              );
-            })}
-
-          </div>
+        {comments.length === 0 && (
+          <p className="empty-message">
+            No comments yet. Be the first to comment!
+          </p>
         )}
 
-      </div>
+        {comments.map((comment) => {
+          const commentUserId = getId(comment.user);
+          const currentUserId = getId(user);
 
-    </div>
+          const isOwner =
+            commentUserId &&
+            currentUserId &&
+            String(commentUserId) ===
+              String(currentUserId);
+
+          return (
+            <div
+              key={comment._id}
+              className="comment-card"
+            >
+              <strong>
+                {comment.user?.username || "User"}
+              </strong>
+
+              {editingComment === comment._id ? (
+                <div className="comment-edit">
+                  <input
+                    value={editText}
+                    onChange={(e) =>
+                      setEditText(e.target.value)
+                    }
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleUpdateComment(comment._id)
+                    }
+                  >
+                    Save
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingComment(null);
+                      setEditText("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <p>{comment.text}</p>
+              )}
+
+              {isOwner && editingComment !== comment._id && (
+                <div className="comment-buttons">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleEditComment(comment)
+                    }
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDeleteComment(comment._id)
+                    }
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </section>
+    </main>
   );
 }
 
