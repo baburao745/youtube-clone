@@ -1692,3 +1692,68 @@ body {
     width: 100%;
   }
 }
+/* ================================
+   VIDEO ACTION BUTTONS
+================================ */
+
+.video-actions {
+  display: flex;
+  gap: 12px;
+  padding: 18px 0;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.video-actions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-icon {
+  font-size: 17px;
+}
+
+.action-count {
+  font-size: 13px;
+}
+
+.like-button {
+  background: #ff0000;
+  color: #ffffff;
+  border: 2px solid #ff0000;
+}
+
+.like-button:hover {
+  background: #cc0000;
+  border-color: #cc0000;
+  transform: translateY(-2px);
+}
+
+.dislike-button {
+  background: #ffffff;
+  color: #333333;
+  border: 2px solid #dddddd;
+}
+
+.dislike-button:hover {
+  color: #ff0000;
+  border-color: #ff0000;
+  background: #fff5f5;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+  .video-actions {
+    gap: 8px;
+  }
+
+  .video-actions button {
+    padding: 9px 13px;
+  }
+}

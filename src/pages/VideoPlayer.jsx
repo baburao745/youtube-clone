@@ -33,14 +33,20 @@ function VideoPlayer() {
         setLoading(true);
         setError("");
 
-        const [videoResponse, commentsResponse] = await Promise.all([
-          api.get(`/videos/${id}`),
-          api.get(`/comments/${id}`),
-        ]);
+        const [videoResponse, commentsResponse] =
+          await Promise.all([
+            api.get(`/videos/${id}`),
+            api.get(`/comments/${id}`),
+          ]);
 
-        setVideo(videoResponse.data.video || videoResponse.data);
+        setVideo(
+          videoResponse.data.video || videoResponse.data
+        );
+
         setComments(
-          commentsResponse.data.comments || commentsResponse.data || []
+          commentsResponse.data.comments ||
+            commentsResponse.data ||
+            []
         );
       } catch (error) {
         console.error("VIDEO PAGE ERROR:", error);
@@ -64,9 +70,13 @@ function VideoPlayer() {
     }
 
     try {
-      const response = await api.post(`/videos/${id}/like`);
+      const response = await api.post(
+        `/videos/${id}/like`
+      );
 
-      setVideo(response.data.video || response.data);
+      setVideo(
+        response.data.video || response.data
+      );
     } catch (error) {
       console.error("LIKE ERROR:", error);
 
@@ -84,9 +94,13 @@ function VideoPlayer() {
     }
 
     try {
-      const response = await api.post(`/videos/${id}/dislike`);
+      const response = await api.post(
+        `/videos/${id}/dislike`
+      );
 
-      setVideo(response.data.video || response.data);
+      setVideo(
+        response.data.video || response.data
+      );
     } catch (error) {
       console.error("DISLIKE ERROR:", error);
 
@@ -117,7 +131,8 @@ function VideoPlayer() {
         text: commentText.trim(),
       });
 
-      const newComment = response.data.comment || response.data;
+      const newComment =
+        response.data.comment || response.data;
 
       setComments((previousComments) => [
         newComment,
@@ -148,9 +163,12 @@ function VideoPlayer() {
     }
 
     try {
-      const response = await api.put(`/comments/${commentId}`, {
-        text: editText.trim(),
-      });
+      const response = await api.put(
+        `/comments/${commentId}`,
+        {
+          text: editText.trim(),
+        }
+      );
 
       const updatedComment =
         response.data.comment || response.data;
@@ -217,8 +235,10 @@ function VideoPlayer() {
       <div className="video-player-container">
         <div className="empty-message">
           <h2>Video Not Available</h2>
+
           <p>
-            {error || "This video could not be found."}
+            {error ||
+              "This video could not be found."}
           </p>
 
           <Link to="/" className="home-button">
@@ -239,7 +259,11 @@ function VideoPlayer() {
           width="100%"
           poster={video.thumbnailUrl}
         >
-          <source src={video.videoUrl} type="video/mp4" />
+          <source
+            src={video.videoUrl}
+            type="video/mp4"
+          />
+
           Your browser does not support video playback.
         </video>
       </div>
@@ -249,33 +273,56 @@ function VideoPlayer() {
       </h1>
 
       <div className="video-meta">
-        <span>{video.views || 0} views</span>
+        <span>
+          {video.views || 0} views
+        </span>
+
         <span>•</span>
+
         <span>
           {video.category || "Other"}
         </span>
       </div>
 
       <div className="video-actions">
-        <button type="button" onClick={handleLike}>
-          👍 {video.likes || 0}
+        <button
+          type="button"
+          className="like-button"
+          onClick={handleLike}
+        >
+          <span className="action-icon">👍</span>
+          <span>Like</span>
+          <span className="action-count">
+            {video.likes || 0}
+          </span>
         </button>
 
-        <button type="button" onClick={handleDislike}>
-          👎 {video.dislikes || 0}
+        <button
+          type="button"
+          className="dislike-button"
+          onClick={handleDislike}
+        >
+          <span className="action-icon">👎</span>
+          <span>Dislike</span>
+          <span className="action-count">
+            {video.dislikes || 0}
+          </span>
         </button>
       </div>
 
       {channelId && (
         <div className="video-channel">
           <div className="channel-mini-avatar">
-            {video.channel?.name?.charAt(0)?.toUpperCase() || "C"}
+            {video.channel?.name
+              ?.charAt(0)
+              ?.toUpperCase() || "C"}
           </div>
 
           <div>
             <Link to={`/channel/${channelId}`}>
               <strong>
-                {video.channel?.name || "Unknown Channel"}
+                {video.channel?.name ||
+                  "Unknown Channel"}
               </strong>
             </Link>
           </div>
@@ -284,6 +331,7 @@ function VideoPlayer() {
 
       <div className="video-description">
         <h3>Description</h3>
+
         <p>
           {video.description ||
             "No description available for this video."}
@@ -317,7 +365,9 @@ function VideoPlayer() {
             type="submit"
             disabled={!token || commentLoading}
           >
-            {commentLoading ? "Adding..." : "Comment"}
+            {commentLoading
+              ? "Adding..."
+              : "Comment"}
           </button>
         </form>
 
@@ -328,7 +378,9 @@ function VideoPlayer() {
         )}
 
         {comments.map((comment) => {
-          const commentUserId = getId(comment.user);
+          const commentUserId =
+            getId(comment.user);
+
           const currentUserId = getId(user);
 
           const isOwner =
@@ -343,7 +395,8 @@ function VideoPlayer() {
               className="comment-card"
             >
               <strong>
-                {comment.user?.username || "User"}
+                {comment.user?.username ||
+                  "User"}
               </strong>
 
               {editingComment === comment._id ? (
@@ -358,7 +411,9 @@ function VideoPlayer() {
                   <button
                     type="button"
                     onClick={() =>
-                      handleUpdateComment(comment._id)
+                      handleUpdateComment(
+                        comment._id
+                      )
                     }
                   >
                     Save
@@ -378,27 +433,33 @@ function VideoPlayer() {
                 <p>{comment.text}</p>
               )}
 
-              {isOwner && editingComment !== comment._id && (
-                <div className="comment-buttons">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleEditComment(comment)
-                    }
-                  >
-                    Edit
-                  </button>
+              {isOwner &&
+                editingComment !==
+                  comment._id && (
+                  <div className="comment-buttons">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleEditComment(
+                          comment
+                        )
+                      }
+                    >
+                      Edit
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleDeleteComment(comment._id)
-                    }
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDeleteComment(
+                          comment._id
+                        )
+                      }
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
             </div>
           );
         })}
