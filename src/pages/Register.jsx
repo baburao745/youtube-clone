@@ -8,6 +8,8 @@ function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -16,18 +18,31 @@ function Register() {
 
     setError("");
 
-    if (!username || !email || !password) {
-      setError("All fields are required");
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
+      setError("All fields are required.");
       return;
     }
 
-    if (username.length < 3) {
-      setError("Username must be at least 3 characters");
+    if (username.trim().length < 3) {
+      setError("Username must be at least 3 characters.");
+      return;
+    }
+
+    const emailPattern =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+      setError("Please enter a valid email address.");
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -37,21 +52,23 @@ function Register() {
       await axios.post(
         "http://localhost:5000/api/auth/register",
         {
-          username,
-          email,
+          username: username.trim(),
+          email: email.trim(),
           password
         }
       );
 
-      alert("Registration successful! Please sign in.");
+      alert(
+        "Registration successful! Please sign in."
+      );
 
       navigate("/login");
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       setError(
         error.response?.data?.message ||
-        "Registration failed. Please try again."
+          "Registration failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -60,10 +77,14 @@ function Register() {
 
   return (
     <div className="auth-page">
+
       <div className="auth-box">
+
         <h1>Create Account</h1>
 
-        <p>Create your YouTube Clone account</p>
+        <p>
+          Create your YouTube Clone account
+        </p>
 
         {error && (
           <div className="auth-error">
@@ -72,30 +93,52 @@ function Register() {
         )}
 
         <form onSubmit={handleRegister}>
+
           <input
             type="text"
             placeholder="Username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) =>
+              setUsername(e.target.value)
+            }
           />
 
           <input
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
           />
 
           <input
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
           />
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Creating Account..." : "Register"}
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) =>
+              setConfirmPassword(e.target.value)
+            }
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? "Creating Account..."
+              : "Register"}
           </button>
+
         </form>
 
         <p className="auth-link">
@@ -104,7 +147,9 @@ function Register() {
             Sign In
           </Link>
         </p>
+
       </div>
+
     </div>
   );
 }
