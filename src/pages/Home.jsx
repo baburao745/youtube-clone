@@ -1,114 +1,127 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-import CategoryFilter from "../components/CategoryFilter";
-import VideoGrid from "../components/VideoGrid";
+import { useSearchParams } from "react-router-dom";
+import api from "../api/axios.js";
+import CategoryFilter from "../components/CategoryFilter.jsx";
+import VideoGrid from "../components/VideoGrid.jsx";
 
 function Home() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams] = useSearchParams();
+
+  const [videos, setVideos] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [backendVideos, setBackendVideos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const searchText = searchParams.get("search") || "";
 
   const sampleVideos = [
     {
-      id: 1,
-      title: "Learn React JS in One Hour",
-      channel: "Code Academy",
+      id: "sample-1",
+      title: "Amazing Nature Documentary",
+      thumbnail: "https://picsum.photos/400/225?random=11",
+      channel: "Nature World",
       views: "1.2M",
-      category: "Technology",
-      thumbnail: "https://picsum.photos/400/225?random=1",
+      category: "Movies",
     },
     {
-      id: 2,
-      title: "JavaScript Full Course",
-      channel: "Programming Hub",
+      id: "sample-2",
+      title: "Top 10 Gaming Moments",
+      thumbnail: "https://picsum.photos/400/225?random=12",
+      channel: "Gaming Zone",
       views: "850K",
-      category: "Education",
-      thumbnail: "https://picsum.photos/400/225?random=2",
+      category: "Gaming",
     },
     {
-      id: 3,
-      title: "Top 10 Coding Tips",
-      channel: "Tech World",
+      id: "sample-3",
+      title: "Latest Technology Updates",
+      thumbnail: "https://picsum.photos/400/225?random=13",
+      channel: "Tech Daily",
       views: "620K",
       category: "Technology",
-      thumbnail: "https://picsum.photos/400/225?random=3",
     },
     {
-      id: 4,
-      title: "MERN Stack Project",
-      channel: "Developer Zone",
+      id: "sample-4",
+      title: "Relaxing Music Mix",
+      thumbnail: "https://picsum.photos/400/225?random=14",
+      channel: "Music Station",
+      views: "2.4M",
+      category: "Music",
+    },
+    {
+      id: "sample-5",
+      title: "Learn JavaScript Easily",
+      thumbnail: "https://picsum.photos/400/225?random=15",
+      channel: "Code Academy",
       views: "450K",
       category: "Education",
-      thumbnail: "https://picsum.photos/400/225?random=4",
     },
     {
-      id: 5,
-      title: "How to Become a Software Developer",
-      channel: "Career Guide",
+      id: "sample-6",
+      title: "Football Highlights",
+      thumbnail: "https://picsum.photos/400/225?random=16",
+      channel: "Sports Hub",
+      views: "980K",
+      category: "Sports",
+    },
+    {
+      id: "sample-7",
+      title: "Breaking News Today",
+      thumbnail: "https://picsum.photos/400/225?random=17",
+      channel: "News Network",
+      views: "730K",
+      category: "News",
+    },
+    {
+      id: "sample-8",
+      title: "Best Movie Trailers",
+      thumbnail: "https://picsum.photos/400/225?random=18",
+      channel: "Movie Central",
       views: "1.8M",
-      category: "Education",
-      thumbnail: "https://picsum.photos/400/225?random=5",
-    },
-    {
-      id: 6,
-      title: "MongoDB Complete Tutorial",
-      channel: "Database School",
-      views: "390K",
-      category: "Technology",
-      thumbnail: "https://picsum.photos/400/225?random=6",
-    },
-    {
-      id: 7,
-      title: "Node.js Backend Tutorial",
-      channel: "Web Developers",
-      views: "720K",
-      category: "Technology",
-      thumbnail: "https://picsum.photos/400/225?random=7",
-    },
-    {
-      id: 8,
-      title: "AI and Machine Learning",
-      channel: "Future Tech",
-      views: "2.1M",
-      category: "Education",
-      thumbnail: "https://picsum.photos/400/225?random=8",
+      category: "Movies",
     },
   ];
 
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/videos"
-        );
+        setLoading(true);
+        setError("");
 
-        const data = response.data.videos || response.data;
+        const response = await api.get("/videos");
 
-        const convertedVideos = data.map((video) => ({
+        const backendVideos =
+          response.data.videos || response.data || [];
+
+        const formattedVideos = backendVideos.map((video) => ({
           id: video._id,
           title: video.title,
-          channel: video.channel?.name || "Unknown Channel",
-          views: video.views,
-          category: video.category || "Other",
           thumbnail: video.thumbnailUrl,
+          channel: video.channel?.name || "Unknown Channel",
+          views: video.views || 0,
+          category: video.category || "Other",
+          description: video.description || "",
+          videoUrl: video.videoUrl,
         }));
 
-        setBackendVideos(convertedVideos);
+        setVideos([...formattedVideos, ...sampleVideos]);
       } catch (error) {
-        console.error("Unable to load backend videos:", error);
+        console.error("FETCH VIDEOS ERROR:", error);
+
+        setError("Unable to load server videos.");
+
+        setVideos(sampleVideos);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchVideos();
   }, []);
 
-  const videos = [...sampleVideos, ...backendVideos];
-
   const filteredVideos = videos.filter((video) => {
     const matchesSearch = video.title
       .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+      .includes(searchText.toLowerCase());
 
     const matchesCategory =
       selectedCategory === "All" ||
@@ -118,29 +131,35 @@ function Home() {
   });
 
   return (
-    <div>
-      <div className="home-search">
-        <input
-          type="text"
-          placeholder="Search videos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
+    <main className="home-page">
       <CategoryFilter
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
       />
 
-      <VideoGrid videos={filteredVideos} />
-
-      {filteredVideos.length === 0 && (
-        <p className="no-results">
-          No videos found.
-        </p>
+      {searchText && (
+        <div className="search-results">
+          <h2>Search results for "{searchText}"</h2>
+        </div>
       )}
-    </div>
+
+      {loading && (
+        <div className="loading-message">
+          Loading videos...
+        </div>
+      )}
+
+      {!loading && filteredVideos.length === 0 && (
+        <div className="empty-message">
+          <h2>No videos found</h2>
+          <p>Try another search or category.</p>
+        </div>
+      )}
+
+      {!loading && filteredVideos.length > 0 && (
+        <VideoGrid videos={filteredVideos} />
+      )}
+    </main>
   );
 }
 
