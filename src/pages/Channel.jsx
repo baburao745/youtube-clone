@@ -12,6 +12,7 @@ function Channel() {
   const [error, setError] = useState("");
 
   const [showVideoForm, setShowVideoForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -19,11 +20,28 @@ function Channel() {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [category, setCategory] = useState("Technology");
 
-  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
+  // Get logged-in user ID
+  const loggedInUserId =
+    user?.id ||
+    user?._id ||
+    user?.userId;
+
+  const getId = (value) => {
+    if (!value) return null;
+
+    if (typeof value === "object") {
+      return value._id || value.id || null;
+    }
+
+    return value;
+  };
+
+  // Fetch channel and videos
   const fetchChannelData = async () => {
     try {
       setLoading(true);
@@ -34,7 +52,8 @@ function Channel() {
       );
 
       const channelData =
-        channelResponse.data.channel || channelResponse.data;
+        channelResponse.data.channel ||
+        channelResponse.data;
 
       setChannel(channelData);
 
@@ -43,20 +62,21 @@ function Channel() {
       );
 
       const allVideos =
-        videosResponse.data.videos || videosResponse.data;
+        videosResponse.data.videos ||
+        videosResponse.data;
 
       const channelVideos = allVideos.filter((video) => {
-        const channelId =
-          typeof video.channel === "object"
-            ? video.channel?._id
-            : video.channel;
+        const videoChannelId = getId(video.channel);
 
-        return String(channelId) === String(id);
+        return (
+          String(videoChannelId) === String(id)
+        );
       });
 
       setVideos(channelVideos);
     } catch (error) {
       console.error("CHANNEL ERROR:", error);
+
       setError(
         error.response?.data?.message ||
           "Unable to load channel."
@@ -70,6 +90,17 @@ function Channel() {
     fetchChannelData();
   }, [id]);
 
+  // Channel owner
+  const channelOwnerId = getId(channel?.owner);
+
+  // Check channel ownership
+  const isChannelOwner =
+    Boolean(token) &&
+    Boolean(loggedInUserId) &&
+    Boolean(channelOwnerId) &&
+    String(loggedInUserId) ===
+      String(channelOwnerId);
+
   // Clear form
   const clearForm = () => {
     setTitle("");
@@ -81,6 +112,17 @@ function Channel() {
     setShowVideoForm(false);
   };
 
+  // Create form
+  const openCreateForm = () => {
+    setEditingId(null);
+    setTitle("");
+    setDescription("");
+    setVideoUrl("");
+    setThumbnailUrl("");
+    setCategory("Technology");
+    setShowVideoForm(true);
+  };
+
   // Create video
   const handleCreateVideo = async (e) => {
     e.preventDefault();
@@ -88,6 +130,11 @@ function Channel() {
     if (!token) {
       alert("Please sign in first.");
       navigate("/login");
+      return;
+    }
+
+    if (!isChannelOwner) {
+      alert("You can only create videos on your own channel.");
       return;
     }
 
@@ -131,7 +178,7 @@ function Channel() {
       clearForm();
       await fetchChannelData();
     } catch (error) {
-      console.error("CREATE VIDEO ERROR:", error);
+      console.error(error);
 
       alert(
         error.response?.data?.message ||
@@ -142,7 +189,7 @@ function Channel() {
     }
   };
 
-  // Start editing
+  // Edit video
   const startEditing = (video) => {
     setEditingId(video._id);
 
@@ -204,7 +251,7 @@ function Channel() {
       clearForm();
       await fetchChannelData();
     } catch (error) {
-      console.error("UPDATE VIDEO ERROR:", error);
+      console.error(error);
 
       alert(
         error.response?.data?.message ||
@@ -212,6 +259,45 @@ function Channel() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Delete video
+  const handleDeleteVideo = async (videoId) => {
+    if (!token) {
+      alert("Please sign in first.");
+      navigate("/login");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this video?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `http://localhost:5000/api/videos/${videoId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      alert("Video deleted successfully!");
+
+      await fetchChannelData();
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        error.response?.data?.message ||
+          "Unable to delete video."
+      );
     }
   };
 
@@ -242,10 +328,13 @@ function Channel() {
   return (
     <div className="channel-page">
 
-      {/* Channel Header */}
+      {/* CHANNEL HEADER */}
       <div className="channel-header">
+
         <div className="channel-avatar">
-          {channel.name.charAt(0).toUpperCase()}
+          {channel.name
+            ? channel.name.charAt(0).toUpperCase()
+            : "C"}
         </div>
 
         <div className="channel-details">
@@ -260,36 +349,31 @@ function Channel() {
             {channel.subscribers || 0} subscribers
           </p>
         </div>
+
       </div>
 
-      {/* Create Video Button */}
-      <div className="channel-actions">
-        <button
-          onClick={() => {
-            if (showVideoForm) {
-              clearForm();
-            } else {
-              setShowVideoForm(true);
-              setEditingId(null);
-            }
-          }}
-        >
-          {showVideoForm
-            ? "Cancel"
-            : "+ Create Video"}
-        </button>
-      </div>
+      {/* CREATE VIDEO */}
+      {isChannelOwner && (
+        <div className="channel-actions">
 
-      {/* Create / Edit Form */}
-      {showVideoForm && (
+          <button onClick={openCreateForm}>
+            + Create Video
+          </button>
+
+        </div>
+      )}
+
+      {/* CREATE / EDIT FORM */}
+      {showVideoForm && isChannelOwner && (
         <form
+          className="channel-form"
           onSubmit={
             editingId
               ? handleUpdateVideo
               : handleCreateVideo
           }
-          className="channel-form"
         >
+
           <h2>
             {editingId
               ? "Edit Video"
@@ -337,40 +421,20 @@ function Channel() {
               setCategory(e.target.value)
             }
           >
-            <option value="Technology">
-              Technology
-            </option>
-
-            <option value="Education">
-              Education
-            </option>
-
-            <option value="Music">
-              Music
-            </option>
-
-            <option value="Gaming">
-              Gaming
-            </option>
-
-            <option value="Movies">
-              Movies
-            </option>
-
-            <option value="News">
-              News
-            </option>
-
-            <option value="Sports">
-              Sports
-            </option>
-
-            <option value="Other">
-              Other
-            </option>
+            <option value="Technology">Technology</option>
+            <option value="Education">Education</option>
+            <option value="Music">Music</option>
+            <option value="Gaming">Gaming</option>
+            <option value="Movies">Movies</option>
+            <option value="News">News</option>
+            <option value="Sports">Sports</option>
+            <option value="Other">Other</option>
           </select>
 
-          <button type="submit" disabled={saving}>
+          <button
+            type="submit"
+            disabled={saving}
+          >
             {saving
               ? "Saving..."
               : editingId
@@ -378,19 +442,19 @@ function Channel() {
               : "Create Video"}
           </button>
 
-          {editingId && (
-            <button
-              type="button"
-              onClick={clearForm}
-            >
-              Cancel Edit
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={clearForm}
+          >
+            Cancel
+          </button>
+
         </form>
       )}
 
-      {/* Videos */}
+      {/* VIDEOS */}
       <div className="channel-videos">
+
         <h2>Videos</h2>
 
         {videos.length === 0 ? (
@@ -404,7 +468,9 @@ function Channel() {
                 key={video._id}
               >
 
-                <Link to={`/video/${video._id}`}>
+                <Link
+                  to={`/video/${video._id}`}
+                >
                   <img
                     src={video.thumbnailUrl}
                     alt={video.title}
@@ -417,21 +483,39 @@ function Channel() {
                   </p>
                 </Link>
 
-                {/* EDIT BUTTON */}
-                <button
-                  className="edit-video-btn"
-                  onClick={() =>
-                    startEditing(video)
-                  }
-                >
-                  ✏️ Edit Video
-                </button>
+                {/* EDIT + DELETE */}
+                {isChannelOwner && (
+                  <div className="video-management-buttons">
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        startEditing(video)
+                      }
+                    >
+                      ✏️ Edit Video
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDeleteVideo(
+                          video._id
+                        )
+                      }
+                    >
+                      🗑️ Delete Video
+                    </button>
+
+                  </div>
+                )}
 
               </div>
             ))}
 
           </div>
         )}
+
       </div>
 
     </div>
