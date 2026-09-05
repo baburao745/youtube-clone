@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 function Header() {
   const navigate = useNavigate();
@@ -11,10 +11,10 @@ function Header() {
   const handleSearch = (e) => {
     e.preventDefault();
 
-    if (searchText.trim()) {
-      navigate(
-        `/?search=${encodeURIComponent(searchText.trim())}`
-      );
+    const search = searchText.trim();
+
+    if (search) {
+      navigate(`/?search=${encodeURIComponent(search)}`);
     } else {
       navigate("/");
     }
@@ -28,12 +28,8 @@ function Header() {
 
   return (
     <header className="header">
-
-      {/* LEFT */}
       <div className="header-left">
-        <button className="menu-btn">
-          ☰
-        </button>
+        <button className="menu-btn">☰</button>
 
         <Link to="/" className="logo">
           <span className="logo-icon">▶</span>
@@ -41,31 +37,20 @@ function Header() {
         </Link>
       </div>
 
-      {/* SEARCH */}
-      <form
-        className="search-box"
-        onSubmit={handleSearch}
-      >
+      <form className="search-box" onSubmit={handleSearch}>
         <input
           type="text"
           placeholder="Search"
           value={searchText}
-          onChange={(e) =>
-            setSearchText(e.target.value)
-          }
+          onChange={(e) => setSearchText(e.target.value)}
         />
 
-        <button type="submit">
-          🔍
-        </button>
+        <button type="submit">🔍</button>
       </form>
 
-      {/* RIGHT */}
       <div className="header-right">
-
         {token && user ? (
           <>
-            {/* CREATE CHANNEL */}
             <Link
               to="/create-channel"
               className="create-channel-btn"
@@ -73,12 +58,10 @@ function Header() {
               + Create Channel
             </Link>
 
-            {/* USERNAME */}
             <span className="username">
               👤 {user.username}
             </span>
 
-            {/* LOGOUT */}
             <button
               className="login-btn"
               onClick={handleLogout}
@@ -87,14 +70,10 @@ function Header() {
             </button>
           </>
         ) : (
-          <Link
-            to="/login"
-            className="login-btn"
-          >
+          <Link to="/login" className="login-btn">
             Sign In
           </Link>
         )}
-
       </div>
     </header>
   );
