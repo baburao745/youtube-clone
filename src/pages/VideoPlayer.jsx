@@ -8,8 +8,13 @@ function VideoPlayer() {
   const [video, setVideo] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const token = localStorage.getItem("token");
 
   const fetchVideo = async () => {
     try {
@@ -33,7 +38,7 @@ function VideoPlayer() {
 
       setComments(response.data.comments || response.data);
     } catch (error) {
-      console.error("Comments error:", error);
+      console.error(error);
       setComments([]);
     }
   };
@@ -41,10 +46,8 @@ function VideoPlayer() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-
       await fetchVideo();
       await fetchComments();
-
       setLoading(false);
     };
 
@@ -52,14 +55,12 @@ function VideoPlayer() {
   }, [id]);
 
   const handleLike = async () => {
+    if (!token) {
+      alert("Please sign in to like this video.");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        alert("Please sign in to like this video.");
-        return;
-      }
-
       await axios.post(
         `http://localhost:5000/api/videos/${id}/like`,
         {},
@@ -78,14 +79,12 @@ function VideoPlayer() {
   };
 
   const handleDislike = async () => {
+    if (!token) {
+      alert("Please sign in to dislike this video.");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        alert("Please sign in to dislike this video.");
-        return;
-      }
-
       await axios.post(
         `http://localhost:5000/api/videos/${id}/dislike`,
         {},
@@ -105,8 +104,6 @@ function VideoPlayer() {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
-
-    const token = localStorage.getItem("token");
 
     if (!token) {
       alert("Please sign in to comment.");
@@ -133,14 +130,59 @@ function VideoPlayer() {
       );
 
       setCommentText("");
-
-      await fetchComments();
+      fetchComments();
     } catch (error) {
       console.error(error);
-
       alert(
         error.response?.data?.message ||
           "Unable to add comment."
+      );
+    }
+  };
+
+  const startEditing = (comment) => {
+    setEditingId(comment._id);
+    setEditingText(comment.text);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingText("");
+  };
+
+  const handleEditComment = async (commentId) => {
+    if (!token) {
+      alert("Please sign in.");
+      return;
+    }
+
+    if (!editingText.trim()) {
+      alert("Comment cannot be empty.");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `http://localhost:5000/api/comments/${commentId}`,
+        {
+          text: editingText
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setEditingId(null);
+      setEditingText("");
+
+      fetchComments();
+    } catch (error) {
+      console.error(error);
+      alert(
+        error.response?.data?.message ||
+          "Unable to edit comment."
       );
     }
   };
@@ -230,18 +272,60 @@ function VideoPlayer() {
           <p>No comments yet.</p>
         ) : (
           <div className="comments-list">
-            {comments.map((comment) => (
-              <div
-                className="comment-card"
-                key={comment._id}
-              >
-                <strong>
-                  {comment.user?.username || "User"}
-                </strong>
+            {comments.map((comment) => {
+              const isOwner =
+                user &&
+                comment.user?._id === user.id;
 
-                <p>{comment.text}</p>
-              </div>
-            ))}
+              return (
+                <div
+                  className="comment-card"
+                  key={comment._id}
+                >
+                  <strong>
+                    {comment.user?.username || "User"}
+                  </strong>
+
+                  {editingId === comment._id ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={editingText}
+                        onChange={(e) =>
+                          setEditingText(e.target.value)
+                        }
+                      />
+
+                      <button
+                        onClick={() =>
+                          handleEditComment(comment._id)
+                        }
+                      >
+                        Save
+                      </button>
+
+                      <button onClick={cancelEditing}>
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p>{comment.text}</p>
+
+                      {isOwner && (
+                        <button
+                          onClick={() =>
+                            startEditing(comment)
+                          }
+                        >
+                          ✏️ Edit
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
