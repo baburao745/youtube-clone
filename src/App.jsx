@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Header from "./components/Header";
@@ -12,20 +13,37 @@ import CreateChannel from "./pages/CreateChannel";
 import NotFound from "./pages/NotFound";
 
 function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <BrowserRouter>
-      <Header />
+      <Header
+        onMenuClick={() =>
+          setSidebarOpen(!sidebarOpen)
+        }
+      />
 
       <div className="app-layout">
-        <Sidebar />
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() =>
+            setSidebarOpen(false)
+          }
+        />
 
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
 
-            <Route path="/login" element={<Login />} />
+            <Route
+              path="/login"
+              element={<Login />}
+            />
 
-            <Route path="/register" element={<Register />} />
+            <Route
+              path="/register"
+              element={<Register />}
+            />
 
             <Route
               path="/video/:id"

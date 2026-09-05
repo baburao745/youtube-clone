@@ -1,52 +1,89 @@
-function Sidebar() {
+import { Link } from "react-router-dom";
+
+function Sidebar({ isOpen, onClose }) {
+  const menuItems = [
+    { name: "Home", icon: "🏠", path: "/" },
+    { name: "Trending", icon: "🔥", path: "/" },
+    { name: "Subscriptions", icon: "📺", path: "/" },
+    { name: "Library", icon: "📚", path: "/" },
+    { name: "History", icon: "🕘", path: "/" },
+    { name: "Liked Videos", icon: "👍", path: "/" }
+  ];
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-item active">
-        🏠 <span>Home</span>
-      </div>
+    <>
+      {isOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={onClose}
+        ></div>
+      )}
 
-      <div className="sidebar-item">
-        🔥 <span>Trending</span>
-      </div>
+      <aside
+        className={`sidebar ${
+          isOpen ? "sidebar-open" : ""
+        }`}
+      >
+        <div className="sidebar-header">
+          <h3>Menu</h3>
 
-      <div className="sidebar-item">
-        📺 <span>Subscriptions</span>
-      </div>
+          <button
+            className="sidebar-close"
+            onClick={onClose}
+          >
+            ✕
+          </button>
+        </div>
 
-      <hr />
+        {menuItems.map((item) => (
+          <Link
+            key={item.name}
+            to={item.path}
+            className="sidebar-item"
+            onClick={onClose}
+          >
+            <span>{item.icon}</span>
+            <span>{item.name}</span>
+          </Link>
+        ))}
 
-      <div className="sidebar-item">
-        📚 <span>Library</span>
-      </div>
+        <hr />
 
-      <div className="sidebar-item">
-        🕘 <span>History</span>
-      </div>
+        <h4>Explore</h4>
 
-      <div className="sidebar-item">
-        👍 <span>Liked Videos</span>
-      </div>
+        <Link
+          to="/"
+          className="sidebar-item"
+          onClick={onClose}
+        >
+          🎵 Music
+        </Link>
 
-      <hr />
+        <Link
+          to="/"
+          className="sidebar-item"
+          onClick={onClose}
+        >
+          🎮 Gaming
+        </Link>
 
-      <h3>Explore</h3>
+        <Link
+          to="/"
+          className="sidebar-item"
+          onClick={onClose}
+        >
+          📰 News
+        </Link>
 
-      <div className="sidebar-item">
-        🎵 <span>Music</span>
-      </div>
-
-      <div className="sidebar-item">
-        🎮 <span>Gaming</span>
-      </div>
-
-      <div className="sidebar-item">
-        📰 <span>News</span>
-      </div>
-
-      <div className="sidebar-item">
-        🏆 <span>Sports</span>
-      </div>
-    </aside>
+        <Link
+          to="/"
+          className="sidebar-item"
+          onClick={onClose}
+        >
+          ⚽ Sports
+        </Link>
+      </aside>
+    </>
   );
 }
 

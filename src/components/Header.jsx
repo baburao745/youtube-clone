@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-function Header() {
+function Header({ onMenuClick }) {
   const navigate = useNavigate();
+
   const [searchText, setSearchText] = useState("");
 
   const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const user = JSON.parse(
+    localStorage.getItem("user") || "null"
+  );
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -14,7 +17,9 @@ function Header() {
     const search = searchText.trim();
 
     if (search) {
-      navigate(`/?search=${encodeURIComponent(search)}`);
+      navigate(
+        `/?search=${encodeURIComponent(search)}`
+      );
     } else {
       navigate("/");
     }
@@ -23,32 +28,55 @@ function Header() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     navigate("/login");
   };
 
   return (
     <header className="header">
-      <div className="header-left">
-        <button className="menu-btn">☰</button>
 
-        <Link to="/" className="logo">
-          <span className="logo-icon">▶</span>
+      <div className="header-left">
+
+        <button
+          className="menu-btn"
+          onClick={onMenuClick}
+        >
+          ☰
+        </button>
+
+        <Link
+          to="/"
+          className="logo"
+        >
+          <span className="logo-icon">
+            ▶
+          </span>
+
           <span>YouTube</span>
         </Link>
+
       </div>
 
-      <form className="search-box" onSubmit={handleSearch}>
+      <form
+        className="search-box"
+        onSubmit={handleSearch}
+      >
         <input
           type="text"
           placeholder="Search"
           value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
+          onChange={(e) =>
+            setSearchText(e.target.value)
+          }
         />
 
-        <button type="submit">🔍</button>
+        <button type="submit">
+          🔍
+        </button>
       </form>
 
       <div className="header-right">
+
         {token && user ? (
           <>
             <Link
@@ -70,11 +98,16 @@ function Header() {
             </button>
           </>
         ) : (
-          <Link to="/login" className="login-btn">
+          <Link
+            to="/login"
+            className="login-btn"
+          >
             Sign In
           </Link>
         )}
+
       </div>
+
     </header>
   );
 }
