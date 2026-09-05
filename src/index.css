@@ -1324,3 +1324,371 @@ body {
     width: 100%;
   }
 }
+/* ================================
+   VIDEO MANAGEMENT FORM
+================================ */
+
+.channel-video-form {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.channel-video-form h2 {
+  margin: 0 0 20px;
+  font-size: 21px;
+}
+
+.video-form-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+
+.video-form-group label {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+
+.video-form-group input,
+.video-form-group textarea,
+.video-form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: 0.2s;
+}
+
+.video-form-group input:focus,
+.video-form-group textarea:focus,
+.video-form-group select:focus {
+  border-color: #111;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.video-form-group textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.video-input-count {
+  align-self: flex-end;
+  margin-top: 5px;
+  color: #777;
+  font-size: 12px;
+}
+
+.video-form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.video-form-buttons button {
+  border: none;
+  padding: 11px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.video-save-btn {
+  background: #ff0000;
+  color: white;
+}
+
+.video-save-btn:hover {
+  background: #cc0000;
+}
+
+.video-cancel-btn {
+  background: #eeeeee;
+  color: #222;
+}
+
+.video-cancel-btn:hover {
+  background: #dddddd;
+}
+
+@media (max-width: 600px) {
+  .channel-video-form {
+    padding: 18px;
+  }
+
+  .video-form-buttons {
+    flex-direction: column;
+  }
+
+  .video-form-buttons button {
+    width: 100%;
+  }
+}
+/* =================================
+   RED & WHITE CHANNEL THEME
+================================= */
+
+.channel-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  background: #ffffff;
+}
+
+/* Channel Header */
+
+.channel-header {
+  background: linear-gradient(135deg, #ff0000, #d60000);
+  color: white;
+  border-radius: 16px;
+  padding: 35px;
+  margin-bottom: 30px;
+  box-shadow: 0 6px 20px rgba(255, 0, 0, 0.18);
+}
+
+.channel-header h1 {
+  margin: 0 0 10px;
+  font-size: 32px;
+  color: white;
+}
+
+.channel-header p {
+  color: #ffffff;
+  opacity: 0.92;
+}
+
+.channel-owner {
+  font-size: 14px;
+  margin-top: 18px;
+}
+
+/* Video Management Box */
+
+.channel-video-form {
+  background: #ffffff;
+  border: 2px solid #ff0000;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 35px;
+  box-shadow: 0 5px 20px rgba(255, 0, 0, 0.08);
+}
+
+.channel-video-form h2 {
+  color: #d60000;
+  margin: 0 0 25px;
+  font-size: 23px;
+}
+
+/* Form Groups */
+
+.video-form-group {
+  margin-bottom: 20px;
+}
+
+.video-form-group label {
+  color: #222;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.video-form-group input,
+.video-form-group textarea,
+.video-form-group select {
+  border: 1px solid #ddd;
+  background: #ffffff;
+  border-radius: 9px;
+  padding: 13px 14px;
+  transition: 0.2s;
+}
+
+.video-form-group input:focus,
+.video-form-group textarea:focus,
+.video-form-group select:focus {
+  border-color: #ff0000;
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.08);
+}
+
+/* Character Counter */
+
+.video-input-count {
+  color: #999;
+}
+
+/* Form Buttons */
+
+.video-form-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.video-save-btn {
+  background: #ff0000;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.video-save-btn:hover {
+  background: #d60000;
+}
+
+.video-cancel-btn {
+  background: white;
+  color: #d60000;
+  border: 2px solid #ff0000;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.video-cancel-btn:hover {
+  background: #fff1f1;
+}
+
+/* Videos Heading */
+
+.channel-videos-title {
+  color: #222;
+  font-size: 25px;
+  border-left: 5px solid #ff0000;
+  padding-left: 12px;
+  margin-bottom: 22px;
+}
+
+/* Video Cards */
+
+.channel-video-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.channel-video-item {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+  transition: 0.25s;
+}
+
+.channel-video-item:hover {
+  transform: translateY(-4px);
+  border-color: #ff0000;
+  box-shadow: 0 8px 20px rgba(255, 0, 0, 0.12);
+}
+
+.channel-video-item img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.channel-video-content {
+  padding: 16px;
+}
+
+.channel-video-content h3 {
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.channel-video-content p {
+  color: #777;
+}
+
+/* Edit / Delete */
+
+.channel-video-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.channel-video-buttons button {
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.channel-video-buttons button:first-child {
+  color: #d60000;
+  border-color: #ff0000;
+}
+
+.channel-video-buttons button:first-child:hover {
+  background: #fff1f1;
+}
+
+.channel-video-buttons button:last-child {
+  color: white;
+  background: #ff0000;
+  border-color: #ff0000;
+}
+
+.channel-video-buttons button:last-child:hover {
+  background: #d60000;
+}
+
+/* Error */
+
+.channel-page .auth-error {
+  background: #fff1f1;
+  color: #c00000;
+  border: 1px solid #ffcccc;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* Mobile */
+
+@media (max-width: 900px) {
+  .channel-video-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .channel-page {
+    padding: 15px;
+  }
+
+  .channel-header {
+    padding: 25px 20px;
+  }
+
+  .channel-header h1 {
+    font-size: 25px;
+  }
+
+  .channel-video-list {
+    grid-template-columns: 1fr;
+  }
+
+  .video-form-buttons {
+    flex-direction: column;
+  }
+
+  .video-save-btn,
+  .video-cancel-btn {
+    width: 100%;
+  }
+}

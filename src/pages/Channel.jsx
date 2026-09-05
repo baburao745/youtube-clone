@@ -1,18 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { Link, useParams } from "react-router-dom";
+import api from "../api/axios.js";
 
 function Channel() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [channel, setChannel] = useState(null);
   const [videos, setVideos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [showVideoForm, setShowVideoForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -20,59 +14,61 @@ function Channel() {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [category, setCategory] = useState("Technology");
 
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
-
-  // Get logged-in user ID
-  const loggedInUserId =
-    user?.id ||
-    user?._id ||
-    user?.userId;
 
   const getId = (value) => {
     if (!value) return null;
 
     if (typeof value === "object") {
-      return value._id || value.id || null;
+      return value._id || value.id || value.userId || null;
     }
 
     return value;
   };
 
-  // Fetch channel and videos
+  const loggedInUserId =
+    user?.id || user?._id || user?.userId;
+
+  const channelOwnerId = getId(channel?.owner);
+
+  const isChannelOwner =
+    Boolean(token) &&
+    Boolean(loggedInUserId) &&
+    Boolean(channelOwnerId) &&
+    String(loggedInUserId) === String(channelOwnerId);
+
   const fetchChannelData = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const channelResponse = await axios.get(
-        `http://localhost:5000/api/channels/${id}`
-      );
+      const [channelResponse, videosResponse] =
+        await Promise.all([
+          api.get(`/channels/${id}`),
+          api.get("/videos"),
+        ]);
 
       const channelData =
         channelResponse.data.channel ||
         channelResponse.data;
 
-      setChannel(channelData);
-
-      const videosResponse = await axios.get(
-        "http://localhost:5000/api/videos"
-      );
-
       const allVideos =
         videosResponse.data.videos ||
-        videosResponse.data;
+        videosResponse.data ||
+        [];
 
-      const channelVideos = allVideos.filter((video) => {
-        const videoChannelId = getId(video.channel);
+      const channelVideos = allVideos.filter(
+        (video) =>
+          String(getId(video.channel)) === String(id)
+      );
 
-        return (
-          String(videoChannelId) === String(id)
-        );
-      });
-
+      setChannel(channelData);
       setVideos(channelVideos);
     } catch (error) {
       console.error("CHANNEL ERROR:", error);
@@ -90,211 +86,106 @@ function Channel() {
     fetchChannelData();
   }, [id]);
 
-  // Channel owner
-  const channelOwnerId = getId(channel?.owner);
-
-  // Check channel ownership
-  const isChannelOwner =
-    Boolean(token) &&
-    Boolean(loggedInUserId) &&
-    Boolean(channelOwnerId) &&
-    String(loggedInUserId) ===
-      String(channelOwnerId);
-
-  // Clear form
-  const clearForm = () => {
+  const resetForm = () => {
     setTitle("");
     setDescription("");
     setVideoUrl("");
     setThumbnailUrl("");
     setCategory("Technology");
     setEditingId(null);
-    setShowVideoForm(false);
   };
 
-  // Create form
-  const openCreateForm = () => {
-    setEditingId(null);
-    setTitle("");
-    setDescription("");
-    setVideoUrl("");
-    setThumbnailUrl("");
-    setCategory("Technology");
-    setShowVideoForm(true);
-  };
-
-  // Create video
-  const handleCreateVideo = async (e) => {
+  const handleSubmitVideo = async (e) => {
     e.preventDefault();
-
-    if (!token) {
-      alert("Please sign in first.");
-      navigate("/login");
-      return;
-    }
-
-    if (!isChannelOwner) {
-      alert("You can only create videos on your own channel.");
-      return;
-    }
+    setError("");
 
     if (!title.trim()) {
-      alert("Video title is required.");
+      setError("Video title is required.");
       return;
     }
 
     if (!videoUrl.trim()) {
-      alert("Video URL is required.");
+      setError("Video URL is required.");
       return;
     }
 
     if (!thumbnailUrl.trim()) {
-      alert("Thumbnail URL is required.");
+      setError("Thumbnail URL is required.");
       return;
     }
 
     try {
       setSaving(true);
 
-      await axios.post(
-        "http://localhost:5000/api/videos",
-        {
-          title: title.trim(),
-          description: description.trim(),
-          videoUrl: videoUrl.trim(),
-          thumbnailUrl: thumbnailUrl.trim(),
-          channelId: id,
-          category
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const videoData = {
+        title: title.trim(),
+        description: description.trim(),
+        videoUrl: videoUrl.trim(),
+        thumbnailUrl: thumbnailUrl.trim(),
+        category,
+        channelId: id,
+      };
 
-      alert("Video created successfully!");
+      if (editingId) {
+        await api.put(
+          `/videos/${editingId}`,
+          videoData
+        );
 
-      clearForm();
+        alert("Video updated successfully!");
+      } else {
+        await api.post("/videos", videoData);
+
+        alert("Video created successfully!");
+      }
+
+      resetForm();
       await fetchChannelData();
     } catch (error) {
-      console.error(error);
+      console.error("VIDEO SAVE ERROR:", error);
 
-      alert(
+      setError(
         error.response?.data?.message ||
-          "Unable to create video."
+          "Unable to save video."
       );
     } finally {
       setSaving(false);
     }
   };
 
-  // Edit video
-  const startEditing = (video) => {
+  const handleEdit = (video) => {
     setEditingId(video._id);
-
     setTitle(video.title || "");
     setDescription(video.description || "");
     setVideoUrl(video.videoUrl || "");
     setThumbnailUrl(video.thumbnailUrl || "");
     setCategory(video.category || "Technology");
 
-    setShowVideoForm(true);
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
-  // Update video
-  const handleUpdateVideo = async (e) => {
-    e.preventDefault();
-
-    if (!token) {
-      alert("Please sign in first.");
-      navigate("/login");
-      return;
-    }
-
-    if (!title.trim()) {
-      alert("Video title is required.");
-      return;
-    }
-
-    if (!videoUrl.trim()) {
-      alert("Video URL is required.");
-      return;
-    }
-
-    if (!thumbnailUrl.trim()) {
-      alert("Thumbnail URL is required.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      await axios.put(
-        `http://localhost:5000/api/videos/${editingId}`,
-        {
-          title: title.trim(),
-          description: description.trim(),
-          videoUrl: videoUrl.trim(),
-          thumbnailUrl: thumbnailUrl.trim(),
-          category
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      alert("Video updated successfully!");
-
-      clearForm();
-      await fetchChannelData();
-    } catch (error) {
-      console.error(error);
-
-      alert(
-        error.response?.data?.message ||
-          "Unable to update video."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Delete video
-  const handleDeleteVideo = async (videoId) => {
-    if (!token) {
-      alert("Please sign in first.");
-      navigate("/login");
-      return;
-    }
-
-    const confirmDelete = window.confirm(
+  const handleDelete = async (videoId) => {
+    const confirmed = window.confirm(
       "Are you sure you want to delete this video?"
     );
 
-    if (!confirmDelete) {
+    if (!confirmed) {
       return;
     }
 
     try {
-      await axios.delete(
-        `http://localhost:5000/api/videos/${videoId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      await api.delete(`/videos/${videoId}`);
 
       alert("Video deleted successfully!");
 
       await fetchChannelData();
     } catch (error) {
-      console.error(error);
+      console.error("DELETE VIDEO ERROR:", error);
 
-      alert(
+      setError(
         error.response?.data?.message ||
           "Unable to delete video."
       );
@@ -303,222 +194,252 @@ function Channel() {
 
   if (loading) {
     return (
-      <div className="channel-page">
-        <h2>Loading channel...</h2>
-      </div>
+      <main className="channel-page">
+        <div className="loading-message">
+          Loading channel...
+        </div>
+      </main>
     );
   }
 
-  if (error) {
+  if (error && !channel) {
     return (
-      <div className="channel-page">
-        <h2>{error}</h2>
-      </div>
-    );
-  }
-
-  if (!channel) {
-    return (
-      <div className="channel-page">
-        <h2>Channel not found</h2>
-      </div>
+      <main className="channel-page">
+        <div className="empty-message">
+          <h2>Unable to load channel</h2>
+          <p>{error}</p>
+          <Link to="/" className="home-button">
+            Back to Home
+          </Link>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="channel-page">
+    <main className="channel-page">
+      <section className="channel-header">
+        <h1>{channel?.name}</h1>
 
-      {/* CHANNEL HEADER */}
-      <div className="channel-header">
+        <p>
+          {channel?.description ||
+            "Welcome to this channel."}
+        </p>
 
-        <div className="channel-avatar">
-          {channel.name
-            ? channel.name.charAt(0).toUpperCase()
-            : "C"}
-        </div>
+        <p className="channel-owner">
+          Channel owner:{" "}
+          {channel?.owner?.username || "Unknown User"}
+        </p>
+      </section>
 
-        <div className="channel-details">
-          <h1>{channel.name}</h1>
-
-          <p>
-            {channel.description ||
-              "Welcome to my channel!"}
-          </p>
-
-          <p>
-            {channel.subscribers || 0} subscribers
-          </p>
-        </div>
-
-      </div>
-
-      {/* CREATE VIDEO */}
       {isChannelOwner && (
-        <div className="channel-actions">
-
-          <button onClick={openCreateForm}>
-            + Create Video
-          </button>
-
-        </div>
-      )}
-
-      {/* CREATE / EDIT FORM */}
-      {showVideoForm && isChannelOwner && (
-        <form
-          className="channel-form"
-          onSubmit={
-            editingId
-              ? handleUpdateVideo
-              : handleCreateVideo
-          }
-        >
-
+        <section className="channel-video-form">
           <h2>
             {editingId
-              ? "Edit Video"
-              : "Create New Video"}
+              ? "Edit Your Video"
+              : "Upload a New Video"}
           </h2>
 
-          <input
-            type="text"
-            placeholder="Video title"
-            value={title}
-            onChange={(e) =>
-              setTitle(e.target.value)
-            }
-          />
+          {error && (
+            <div className="auth-error">
+              {error}
+            </div>
+          )}
 
-          <textarea
-            placeholder="Video description"
-            value={description}
-            onChange={(e) =>
-              setDescription(e.target.value)
-            }
-          />
+          <form onSubmit={handleSubmitVideo}>
+            <div className="video-form-group">
+              <label htmlFor="video-title">
+                Video Title
+              </label>
 
-          <input
-            type="text"
-            placeholder="Video URL"
-            value={videoUrl}
-            onChange={(e) =>
-              setVideoUrl(e.target.value)
-            }
-          />
+              <input
+                id="video-title"
+                type="text"
+                placeholder="Enter video title"
+                value={title}
+                maxLength={100}
+                onChange={(e) =>
+                  setTitle(e.target.value)
+                }
+              />
 
-          <input
-            type="text"
-            placeholder="Thumbnail URL"
-            value={thumbnailUrl}
-            onChange={(e) =>
-              setThumbnailUrl(e.target.value)
-            }
-          />
+              <span className="video-input-count">
+                {title.length}/100
+              </span>
+            </div>
 
-          <select
-            value={category}
-            onChange={(e) =>
-              setCategory(e.target.value)
-            }
-          >
-            <option value="Technology">Technology</option>
-            <option value="Education">Education</option>
-            <option value="Music">Music</option>
-            <option value="Gaming">Gaming</option>
-            <option value="Movies">Movies</option>
-            <option value="News">News</option>
-            <option value="Sports">Sports</option>
-            <option value="Other">Other</option>
-          </select>
+            <div className="video-form-group">
+              <label htmlFor="video-description">
+                Description
+              </label>
 
-          <button
-            type="submit"
-            disabled={saving}
-          >
-            {saving
-              ? "Saving..."
-              : editingId
-              ? "Update Video"
-              : "Create Video"}
-          </button>
+              <textarea
+                id="video-description"
+                placeholder="Tell viewers about your video..."
+                value={description}
+                maxLength={1000}
+                onChange={(e) =>
+                  setDescription(e.target.value)
+                }
+              />
 
-          <button
-            type="button"
-            onClick={clearForm}
-          >
-            Cancel
-          </button>
+              <span className="video-input-count">
+                {description.length}/1000
+              </span>
+            </div>
 
-        </form>
+            <div className="video-form-group">
+              <label htmlFor="video-url">
+                Video URL
+              </label>
+
+              <input
+                id="video-url"
+                type="url"
+                placeholder="https://example.com/video.mp4"
+                value={videoUrl}
+                onChange={(e) =>
+                  setVideoUrl(e.target.value)
+                }
+              />
+            </div>
+
+            <div className="video-form-group">
+              <label htmlFor="thumbnail-url">
+                Thumbnail URL
+              </label>
+
+              <input
+                id="thumbnail-url"
+                type="url"
+                placeholder="https://example.com/thumbnail.jpg"
+                value={thumbnailUrl}
+                onChange={(e) =>
+                  setThumbnailUrl(e.target.value)
+                }
+              />
+            </div>
+
+            <div className="video-form-group">
+              <label htmlFor="video-category">
+                Category
+              </label>
+
+              <select
+                id="video-category"
+                value={category}
+                onChange={(e) =>
+                  setCategory(e.target.value)
+                }
+              >
+                <option value="Music">Music</option>
+                <option value="Gaming">Gaming</option>
+                <option value="Movies">Movies</option>
+                <option value="News">News</option>
+                <option value="Sports">Sports</option>
+                <option value="Technology">
+                  Technology
+                </option>
+                <option value="Education">
+                  Education
+                </option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="video-form-buttons">
+              <button
+                type="submit"
+                className="video-save-btn"
+                disabled={saving}
+              >
+                {saving
+                  ? "Saving..."
+                  : editingId
+                  ? "Update Video"
+                  : "Create Video"}
+              </button>
+
+              {editingId && (
+                <button
+                  type="button"
+                  className="video-cancel-btn"
+                  onClick={resetForm}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
       )}
 
-      {/* VIDEOS */}
-      <div className="channel-videos">
+      <h2 className="channel-videos-title">
+        Videos
+      </h2>
 
-        <h2>Videos</h2>
+      {videos.length === 0 ? (
+        <div className="empty-message">
+          <h2>No videos yet</h2>
 
-        {videos.length === 0 ? (
-          <p>No videos uploaded yet.</p>
-        ) : (
-          <div className="channel-video-grid">
+          <p>
+            {isChannelOwner
+              ? "Create your first video above."
+              : "This channel has not uploaded any videos yet."}
+          </p>
+        </div>
+      ) : (
+        <div className="channel-video-list">
+          {videos.map((video) => (
+            <div
+              className="channel-video-item"
+              key={video._id}
+            >
+              <Link to={`/video/${video._id}`}>
+                <img
+                  src={video.thumbnailUrl}
+                  alt={video.title}
+                />
+              </Link>
 
-            {videos.map((video) => (
-              <div
-                className="channel-video-card"
-                key={video._id}
-              >
+              <div className="channel-video-content">
+                <h3>{video.title}</h3>
 
-                <Link
-                  to={`/video/${video._id}`}
-                >
-                  <img
-                    src={video.thumbnailUrl}
-                    alt={video.title}
-                  />
+                <p>
+                  {video.views || 0} views
+                </p>
 
-                  <h3>{video.title}</h3>
+                <p>
+                  {video.category || "Other"}
+                </p>
 
-                  <p>
-                    {video.views || 0} views
-                  </p>
-                </Link>
-
-                {/* EDIT + DELETE */}
                 {isChannelOwner && (
-                  <div className="video-management-buttons">
-
+                  <div className="channel-video-buttons">
                     <button
                       type="button"
                       onClick={() =>
-                        startEditing(video)
+                        handleEdit(video)
                       }
                     >
-                      ✏️ Edit Video
+                      Edit
                     </button>
 
                     <button
                       type="button"
                       onClick={() =>
-                        handleDeleteVideo(
-                          video._id
-                        )
+                        handleDelete(video._id)
                       }
                     >
-                      🗑️ Delete Video
+                      Delete
                     </button>
-
                   </div>
                 )}
-
               </div>
-            ))}
-
-          </div>
-        )}
-
-      </div>
-
-    </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
   );
 }
 
