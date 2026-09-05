@@ -93,6 +93,7 @@ function Channel() {
     setThumbnailUrl("");
     setCategory("Technology");
     setEditingId(null);
+    setError("");
   };
 
   const handleSubmitVideo = async (e) => {
@@ -104,6 +105,16 @@ function Channel() {
       return;
     }
 
+    if (title.trim().length < 3) {
+      setError("Video title must be at least 3 characters.");
+      return;
+    }
+
+    if (title.trim().length > 100) {
+      setError("Video title cannot exceed 100 characters.");
+      return;
+    }
+
     if (!videoUrl.trim()) {
       setError("Video URL is required.");
       return;
@@ -111,6 +122,30 @@ function Channel() {
 
     if (!thumbnailUrl.trim()) {
       setError("Thumbnail URL is required.");
+      return;
+    }
+
+    const videoUrlPattern = /^https?:\/\/.+/i;
+    const thumbnailUrlPattern = /^https?:\/\/.+/i;
+
+    if (!videoUrlPattern.test(videoUrl.trim())) {
+      setError(
+        "Please enter a valid video URL starting with http:// or https://."
+      );
+      return;
+    }
+
+    if (!thumbnailUrlPattern.test(thumbnailUrl.trim())) {
+      setError(
+        "Please enter a valid thumbnail URL starting with http:// or https://."
+      );
+      return;
+    }
+
+    if (description.trim().length > 1000) {
+      setError(
+        "Description cannot exceed 1000 characters."
+      );
       return;
     }
 
@@ -160,6 +195,7 @@ function Channel() {
     setVideoUrl(video.videoUrl || "");
     setThumbnailUrl(video.thumbnailUrl || "");
     setCategory(video.category || "Technology");
+    setError("");
 
     window.scrollTo({
       top: 0,
@@ -180,6 +216,10 @@ function Channel() {
       await api.delete(`/videos/${videoId}`);
 
       alert("Video deleted successfully!");
+
+      if (editingId === videoId) {
+        resetForm();
+      }
 
       await fetchChannelData();
     } catch (error) {
@@ -208,6 +248,7 @@ function Channel() {
         <div className="empty-message">
           <h2>Unable to load channel</h2>
           <p>{error}</p>
+
           <Link to="/" className="home-button">
             Back to Home
           </Link>
