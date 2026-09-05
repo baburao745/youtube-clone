@@ -19,7 +19,8 @@ function Channel() {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [category, setCategory] = useState("Technology");
 
-  const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -69,6 +70,18 @@ function Channel() {
     fetchChannelData();
   }, [id]);
 
+  // Clear form
+  const clearForm = () => {
+    setTitle("");
+    setDescription("");
+    setVideoUrl("");
+    setThumbnailUrl("");
+    setCategory("Technology");
+    setEditingId(null);
+    setShowVideoForm(false);
+  };
+
+  // Create video
   const handleCreateVideo = async (e) => {
     e.preventDefault();
 
@@ -94,9 +107,9 @@ function Channel() {
     }
 
     try {
-      setCreating(true);
+      setSaving(true);
 
-      const response = await axios.post(
+      await axios.post(
         "http://localhost:5000/api/videos",
         {
           title: title.trim(),
@@ -113,17 +126,9 @@ function Channel() {
         }
       );
 
-      console.log("VIDEO CREATED:", response.data);
-
       alert("Video created successfully!");
 
-      setTitle("");
-      setDescription("");
-      setVideoUrl("");
-      setThumbnailUrl("");
-      setCategory("Technology");
-      setShowVideoForm(false);
-
+      clearForm();
       await fetchChannelData();
     } catch (error) {
       console.error("CREATE VIDEO ERROR:", error);
@@ -133,7 +138,80 @@ function Channel() {
           "Unable to create video."
       );
     } finally {
-      setCreating(false);
+      setSaving(false);
+    }
+  };
+
+  // Start editing
+  const startEditing = (video) => {
+    setEditingId(video._id);
+
+    setTitle(video.title || "");
+    setDescription(video.description || "");
+    setVideoUrl(video.videoUrl || "");
+    setThumbnailUrl(video.thumbnailUrl || "");
+    setCategory(video.category || "Technology");
+
+    setShowVideoForm(true);
+  };
+
+  // Update video
+  const handleUpdateVideo = async (e) => {
+    e.preventDefault();
+
+    if (!token) {
+      alert("Please sign in first.");
+      navigate("/login");
+      return;
+    }
+
+    if (!title.trim()) {
+      alert("Video title is required.");
+      return;
+    }
+
+    if (!videoUrl.trim()) {
+      alert("Video URL is required.");
+      return;
+    }
+
+    if (!thumbnailUrl.trim()) {
+      alert("Thumbnail URL is required.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      await axios.put(
+        `http://localhost:5000/api/videos/${editingId}`,
+        {
+          title: title.trim(),
+          description: description.trim(),
+          videoUrl: videoUrl.trim(),
+          thumbnailUrl: thumbnailUrl.trim(),
+          category
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      alert("Video updated successfully!");
+
+      clearForm();
+      await fetchChannelData();
+    } catch (error) {
+      console.error("UPDATE VIDEO ERROR:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Unable to update video."
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -163,6 +241,8 @@ function Channel() {
 
   return (
     <div className="channel-page">
+
+      {/* Channel Header */}
       <div className="channel-header">
         <div className="channel-avatar">
           {channel.name.charAt(0).toUpperCase()}
@@ -182,11 +262,17 @@ function Channel() {
         </div>
       </div>
 
+      {/* Create Video Button */}
       <div className="channel-actions">
         <button
-          onClick={() =>
-            setShowVideoForm(!showVideoForm)
-          }
+          onClick={() => {
+            if (showVideoForm) {
+              clearForm();
+            } else {
+              setShowVideoForm(true);
+              setEditingId(null);
+            }
+          }}
         >
           {showVideoForm
             ? "Cancel"
@@ -194,18 +280,29 @@ function Channel() {
         </button>
       </div>
 
+      {/* Create / Edit Form */}
       {showVideoForm && (
         <form
-          onSubmit={handleCreateVideo}
+          onSubmit={
+            editingId
+              ? handleUpdateVideo
+              : handleCreateVideo
+          }
           className="channel-form"
         >
-          <h2>Create New Video</h2>
+          <h2>
+            {editingId
+              ? "Edit Video"
+              : "Create New Video"}
+          </h2>
 
           <input
             type="text"
             placeholder="Video title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) =>
+              setTitle(e.target.value)
+            }
           />
 
           <textarea
@@ -243,25 +340,56 @@ function Channel() {
             <option value="Technology">
               Technology
             </option>
+
             <option value="Education">
               Education
             </option>
-            <option value="Music">Music</option>
-            <option value="Gaming">Gaming</option>
-            <option value="Movies">Movies</option>
-            <option value="News">News</option>
-            <option value="Sports">Sports</option>
-            <option value="Other">Other</option>
+
+            <option value="Music">
+              Music
+            </option>
+
+            <option value="Gaming">
+              Gaming
+            </option>
+
+            <option value="Movies">
+              Movies
+            </option>
+
+            <option value="News">
+              News
+            </option>
+
+            <option value="Sports">
+              Sports
+            </option>
+
+            <option value="Other">
+              Other
+            </option>
           </select>
 
-          <button type="submit" disabled={creating}>
-            {creating
-              ? "Creating..."
+          <button type="submit" disabled={saving}>
+            {saving
+              ? "Saving..."
+              : editingId
+              ? "Update Video"
               : "Create Video"}
           </button>
+
+          {editingId && (
+            <button
+              type="button"
+              onClick={clearForm}
+            >
+              Cancel Edit
+            </button>
+          )}
         </form>
       )}
 
+      {/* Videos */}
       <div className="channel-videos">
         <h2>Videos</h2>
 
@@ -269,25 +397,43 @@ function Channel() {
           <p>No videos uploaded yet.</p>
         ) : (
           <div className="channel-video-grid">
+
             {videos.map((video) => (
-              <Link
-                to={`/video/${video._id}`}
+              <div
                 className="channel-video-card"
                 key={video._id}
               >
-                <img
-                  src={video.thumbnailUrl}
-                  alt={video.title}
-                />
 
-                <h3>{video.title}</h3>
+                <Link to={`/video/${video._id}`}>
+                  <img
+                    src={video.thumbnailUrl}
+                    alt={video.title}
+                  />
 
-                <p>{video.views} views</p>
-              </Link>
+                  <h3>{video.title}</h3>
+
+                  <p>
+                    {video.views || 0} views
+                  </p>
+                </Link>
+
+                {/* EDIT BUTTON */}
+                <button
+                  className="edit-video-btn"
+                  onClick={() =>
+                    startEditing(video)
+                  }
+                >
+                  ✏️ Edit Video
+                </button>
+
+              </div>
             ))}
+
           </div>
         )}
       </div>
+
     </div>
   );
 }
