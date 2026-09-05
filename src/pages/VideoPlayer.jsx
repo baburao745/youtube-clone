@@ -6,30 +6,48 @@ function VideoPlayer() {
   const { id } = useParams();
 
   const [video, setVideo] = useState(null);
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const fetchVideo = async () => {
     try {
-      setLoading(true);
-
       const response = await axios.get(
         `http://localhost:5000/api/videos/${id}`
       );
 
       const videoData = response.data.video || response.data;
-
       setVideo(videoData);
     } catch (error) {
       console.error(error);
       setError("Unable to load video");
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchComments = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/comments/${id}`
+      );
+
+      setComments(response.data.comments || response.data);
+    } catch (error) {
+      console.error("Comments error:", error);
+      setComments([]);
     }
   };
 
   useEffect(() => {
-    fetchVideo();
+    const loadData = async () => {
+      setLoading(true);
+
+      await fetchVideo();
+      await fetchComments();
+
+      setLoading(false);
+    };
+
+    loadData();
   }, [id]);
 
   const handleLike = async () => {
@@ -128,7 +146,8 @@ function VideoPlayer() {
       </p>
 
       <p>
-        <strong>Views:</strong> {video.views}</p>
+        <strong>Views:</strong> {video.views}
+      </p>
 
       <div className="video-actions">
         <button onClick={handleLike}>
@@ -146,6 +165,26 @@ function VideoPlayer() {
         <p>
           {video.description || "No description available."}
         </p>
+      </div>
+
+      <div className="comments-section">
+        <h2>Comments ({comments.length})</h2>
+
+        {comments.length === 0 ? (
+          <p>No comments yet.</p>
+        ) : (
+          <div className="comments-list">
+            {comments.map((comment) => (
+              <div className="comment-card" key={comment._id}>
+                <strong>
+                  {comment.user?.username || "User"}
+                </strong>
+
+                <p>{comment.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
