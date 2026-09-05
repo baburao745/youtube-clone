@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 
 function VideoPlayer() {
@@ -8,13 +8,17 @@ function VideoPlayer() {
   const [video, setVideo] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("user") || "null");
   const token = localStorage.getItem("token");
+  const user = JSON.parse(
+    localStorage.getItem("user") || "null"
+  );
 
   const fetchVideo = async () => {
     try {
@@ -22,10 +26,12 @@ function VideoPlayer() {
         `http://localhost:5000/api/videos/${id}`
       );
 
-      setVideo(response.data.video || response.data);
+      setVideo(
+        response.data.video || response.data
+      );
     } catch (error) {
       console.error(error);
-      setError("Unable to load video");
+      setError("Unable to load video.");
     }
   };
 
@@ -35,7 +41,10 @@ function VideoPlayer() {
         `http://localhost:5000/api/comments/${id}`
       );
 
-      setComments(response.data.comments || response.data);
+      setComments(
+        response.data.comments ||
+          response.data
+      );
     } catch (error) {
       console.error(error);
       setComments([]);
@@ -43,14 +52,16 @@ function VideoPlayer() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadVideo = async () => {
       setLoading(true);
+
       await fetchVideo();
       await fetchComments();
+
       setLoading(false);
     };
 
-    loadData();
+    loadVideo();
   }, [id]);
 
   const handleLike = async () => {
@@ -70,7 +81,7 @@ function VideoPlayer() {
         }
       );
 
-      fetchVideo();
+      await fetchVideo();
     } catch (error) {
       console.error(error);
       alert("Unable to like video.");
@@ -94,7 +105,7 @@ function VideoPlayer() {
         }
       );
 
-      fetchVideo();
+      await fetchVideo();
     } catch (error) {
       console.error(error);
       alert("Unable to dislike video.");
@@ -118,7 +129,7 @@ function VideoPlayer() {
       await axios.post(
         "http://localhost:5000/api/comments",
         {
-          text: commentText,
+          text: commentText.trim(),
           videoId: id
         },
         {
@@ -129,7 +140,8 @@ function VideoPlayer() {
       );
 
       setCommentText("");
-      fetchComments();
+
+      await fetchComments();
     } catch (error) {
       console.error(error);
 
@@ -165,7 +177,7 @@ function VideoPlayer() {
       await axios.put(
         `http://localhost:5000/api/comments/${commentId}`,
         {
-          text: editingText
+          text: editingText.trim()
         },
         {
           headers: {
@@ -174,10 +186,9 @@ function VideoPlayer() {
         }
       );
 
-      setEditingId(null);
-      setEditingText("");
+      cancelEditing();
 
-      fetchComments();
+      await fetchComments();
     } catch (error) {
       console.error(error);
 
@@ -212,7 +223,7 @@ function VideoPlayer() {
         }
       );
 
-      fetchComments();
+      await fetchComments();
     } catch (error) {
       console.error(error);
 
@@ -242,61 +253,121 @@ function VideoPlayer() {
   if (!video) {
     return (
       <div className="video-player-page">
-        <h2>Video not found</h2>
+        <h2>Video not found.</h2>
       </div>
     );
   }
 
+  const channelId =
+    typeof video.channel === "object"
+      ? video.channel?._id
+      : video.channel;
+
   return (
     <div className="video-player-page">
-      <div className="video-player">
+
+      {/* VIDEO */}
+      <div className="video-player-container">
         <video
           controls
-          width="100%"
+          className="main-video"
           src={video.videoUrl}
         >
           Your browser does not support video playback.
         </video>
       </div>
 
-      <h1>{video.title}</h1>
+      {/* TITLE */}
+      <h1 className="video-title">
+        {video.title}
+      </h1>
 
-      <p>
-        <strong>Channel:</strong>{" "}
-        {video.channel?.name || "Unknown Channel"}
-      </p>
+      {/* VIDEO INFO */}
+      <div className="video-meta">
 
-      <p>
-        <strong>Views:</strong> {video.views}
-      </p>
+        <div>
+          <p>
+            {video.views || 0} views
+          </p>
 
-      <div className="video-actions">
-        <button onClick={handleLike}>
-          👍 Like {video.likes}
-        </button>
+          <p>
+            Category:{" "}
+            {video.category || "Other"}
+          </p>
+        </div>
 
-        <button onClick={handleDislike}>
-          👎 Dislike {video.dislikes}
-        </button>
+        <div className="video-actions">
+
+          <button onClick={handleLike}>
+            👍 {video.likes || 0}
+          </button>
+
+          <button onClick={handleDislike}>
+            👎 {video.dislikes || 0}
+          </button>
+
+        </div>
+
       </div>
 
+      {/* CHANNEL */}
+      <div className="video-channel">
+
+        <div className="channel-mini-avatar">
+          {video.channel?.name
+            ? video.channel.name
+                .charAt(0)
+                .toUpperCase()
+            : "C"}
+        </div>
+
+        <div>
+          <strong>
+            {video.channel?.name ||
+              "Unknown Channel"}
+          </strong>
+
+          {channelId && (
+            <Link
+              to={`/channel/${channelId}`}
+            >
+              <p>View Channel</p>
+            </Link>
+          )}
+        </div>
+
+      </div>
+
+      {/* DESCRIPTION */}
       <div className="video-description">
+
         <h3>Description</h3>
 
         <p>
-          {video.description || "No description available."}
+          {video.description ||
+            "No description available."}
         </p>
+
       </div>
 
+      {/* COMMENTS */}
       <div className="comments-section">
-        <h2>Comments ({comments.length})</h2>
 
-        <form onSubmit={handleAddComment}>
+        <h2>
+          Comments ({comments.length})
+        </h2>
+
+        <form
+          onSubmit={handleAddComment}
+          className="comment-form"
+        >
           <input
             type="text"
             placeholder="Add a comment..."
             value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
+            onChange={(e) =>
+              setCommentText(e.target.value)
+            }
           />
 
           <button type="submit">
@@ -308,51 +379,78 @@ function VideoPlayer() {
           <p>No comments yet.</p>
         ) : (
           <div className="comments-list">
+
             {comments.map((comment) => {
+
+              const commentUserId =
+                typeof comment.user === "object"
+                  ? comment.user?._id
+                  : comment.user;
+
+              const currentUserId =
+                user?.id ||
+                user?._id ||
+                user?.userId;
+
               const isOwner =
                 user &&
-                comment.user?._id === user.id;
+                String(commentUserId) ===
+                  String(currentUserId);
 
               return (
                 <div
                   className="comment-card"
                   key={comment._id}
                 >
+
                   <strong>
-                    {comment.user?.username || "User"}
+                    {comment.user?.username ||
+                      "User"}
                   </strong>
 
-                  {editingId === comment._id ? (
-                    <div>
+                  {editingId ===
+                  comment._id ? (
+                    <div className="comment-edit">
+
                       <input
                         type="text"
                         value={editingText}
                         onChange={(e) =>
-                          setEditingText(e.target.value)
+                          setEditingText(
+                            e.target.value
+                          )
                         }
                       />
 
                       <button
                         onClick={() =>
-                          handleEditComment(comment._id)
+                          handleEditComment(
+                            comment._id
+                          )
                         }
                       >
                         Save
                       </button>
 
-                      <button onClick={cancelEditing}>
+                      <button
+                        onClick={cancelEditing}
+                      >
                         Cancel
                       </button>
+
                     </div>
                   ) : (
                     <>
                       <p>{comment.text}</p>
 
                       {isOwner && (
-                        <div>
+                        <div className="comment-buttons">
+
                           <button
                             onClick={() =>
-                              startEditing(comment)
+                              startEditing(
+                                comment
+                              )
                             }
                           >
                             ✏️ Edit
@@ -367,16 +465,21 @@ function VideoPlayer() {
                           >
                             🗑️ Delete
                           </button>
+
                         </div>
                       )}
                     </>
                   )}
+
                 </div>
               );
             })}
+
           </div>
         )}
+
       </div>
+
     </div>
   );
 }

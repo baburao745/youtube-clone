@@ -451,3 +451,132 @@ body {
     width: 100%;
   }
 }
+.video-player-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto 20px;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.main-video {
+  display: block;
+  width: 100%;
+  max-height: 560px;
+  background: #000;
+}
+
+.video-title {
+  font-size: 26px;
+  margin: 15px 0;
+}
+
+.video-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 15px;
+}
+
+.video-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.video-actions button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.video-channel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.channel-mini-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.video-description {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 25px;
+}
+
+.comment-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.comment-form input {
+  flex: 1;
+  padding: 12px;
+}
+
+.comment-form button {
+  padding: 10px 18px;
+}
+
+.comment-card {
+  padding: 15px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.comment-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-buttons button,
+.comment-edit button {
+  padding: 6px 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.comment-edit {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.comment-edit input {
+  flex: 1;
+  padding: 8px;
+}
+
+@media (max-width: 600px) {
+  .video-title {
+    font-size: 20px;
+  }
+
+  .video-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .comment-form {
+    flex-direction: column;
+  }
+
+  .comment-edit {
+    flex-direction: column;
+  }
+}
