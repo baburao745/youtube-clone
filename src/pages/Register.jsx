@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios.js";
 
 function Register() {
   const navigate = useNavigate();
@@ -9,13 +9,11 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (!username.trim() || !email.trim() || !password || !confirmPassword) {
@@ -28,10 +26,9 @@ function Register() {
       return;
     }
 
-    const emailPattern =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailPattern.test(email)) {
+    if (!emailPattern.test(email.trim())) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -49,22 +46,17 @@ function Register() {
     try {
       setLoading(true);
 
-      await axios.post(
-        "http://localhost:5000/api/auth/register",
-        {
-          username: username.trim(),
-          email: email.trim(),
-          password
-        }
-      );
+      await api.post("/auth/register", {
+        username: username.trim(),
+        email: email.trim(),
+        password,
+      });
 
-      alert(
-        "Registration successful! Please sign in."
-      );
+      alert("Registration successful! Please sign in.");
 
       navigate("/login");
     } catch (error) {
-      console.error(error);
+      console.error("REGISTER ERROR:", error);
 
       setError(
         error.response?.data?.message ||
@@ -77,79 +69,52 @@ function Register() {
 
   return (
     <div className="auth-page">
-
       <div className="auth-box">
-
         <h1>Create Account</h1>
 
-        <p>
-          Create your YouTube Clone account
-        </p>
+        <p>Create your YouTube Clone account</p>
 
-        {error && (
-          <div className="auth-error">
-            {error}
-          </div>
-        )}
+        {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleRegister}>
-
           <input
             type="text"
             placeholder="Username"
             value={username}
-            onChange={(e) =>
-              setUsername(e.target.value)
-            }
+            onChange={(e) => setUsername(e.target.value)}
           />
 
           <input
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) =>
-              setEmail(e.target.value)
-            }
+            onChange={(e) => setEmail(e.target.value)}
           />
 
           <input
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) =>
-              setPassword(e.target.value)
-            }
+            onChange={(e) => setPassword(e.target.value)}
           />
 
           <input
             type="password"
             placeholder="Confirm Password"
             value={confirmPassword}
-            onChange={(e) =>
-              setConfirmPassword(e.target.value)
-            }
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
 
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Creating Account..."
-              : "Register"}
+          <button type="submit" disabled={loading}>
+            {loading ? "Creating Account..." : "Register"}
           </button>
-
         </form>
 
         <p className="auth-link">
           Already have an account?{" "}
-          <Link to="/login">
-            Sign In
-          </Link>
+          <Link to="/login">Sign In</Link>
         </p>
-
       </div>
-
     </div>
   );
 }
