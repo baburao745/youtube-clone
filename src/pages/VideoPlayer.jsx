@@ -7,6 +7,7 @@ function VideoPlayer() {
 
   const [video, setVideo] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -102,6 +103,48 @@ function VideoPlayer() {
     }
   };
 
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please sign in to comment.");
+      return;
+    }
+
+    if (!commentText.trim()) {
+      alert("Please enter a comment.");
+      return;
+    }
+
+    try {
+      await axios.post(
+        "http://localhost:5000/api/comments",
+        {
+          text: commentText,
+          videoId: id
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setCommentText("");
+
+      await fetchComments();
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        error.response?.data?.message ||
+          "Unable to add comment."
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="video-player-page">
@@ -170,12 +213,28 @@ function VideoPlayer() {
       <div className="comments-section">
         <h2>Comments ({comments.length})</h2>
 
+        <form onSubmit={handleAddComment}>
+          <input
+            type="text"
+            placeholder="Add a comment..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+          />
+
+          <button type="submit">
+            Comment
+          </button>
+        </form>
+
         {comments.length === 0 ? (
           <p>No comments yet.</p>
         ) : (
           <div className="comments-list">
             {comments.map((comment) => (
-              <div className="comment-card" key={comment._id}>
+              <div
+                className="comment-card"
+                key={comment._id}
+              >
                 <strong>
                   {comment.user?.username || "User"}
                 </strong>
