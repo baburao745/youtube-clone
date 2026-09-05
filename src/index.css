@@ -600,3 +600,43 @@ body {
 .video-card:hover .video-thumbnail {
   opacity: 0.9;
 }
+.not-found-page {
+  min-height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.not-found-box {
+  text-align: center;
+  max-width: 500px;
+}
+
+.not-found-box h1 {
+  font-size: 100px;
+  margin: 0;
+}
+
+.not-found-box h2 {
+  font-size: 28px;
+  margin: 10px 0;
+}
+
+.not-found-box p {
+  color: #606060;
+  margin-bottom: 25px;
+}
+
+.home-button {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #ff0000;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.home-button:hover {
+  opacity: 0.85;
+}
