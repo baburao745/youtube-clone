@@ -9,36 +9,80 @@ function VideoPlayer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const fetchVideo = async () => {
+    try {
+      setLoading(true);
+
+      const response = await axios.get(
+        `http://localhost:5000/api/videos/${id}`
+      );
+
+      const videoData = response.data.video || response.data;
+
+      setVideo(videoData);
+    } catch (error) {
+      console.error(error);
+      setError("Unable to load video");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchVideo = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const response = await axios.get(
-          `http://localhost:5000/api/videos/${id}`
-        );
-
-        console.log("VIDEO RESPONSE:", response.data);
-
-        // Supports both response.data and response.data.video
-        const videoData = response.data.video || response.data;
-
-        setVideo(videoData);
-      } catch (error) {
-        console.error("VIDEO ERROR:", error);
-
-        setError(
-          error.response?.data?.message ||
-            "Unable to load video"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchVideo();
   }, [id]);
+
+  const handleLike = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Please sign in to like this video.");
+        return;
+      }
+
+      await axios.post(
+        `http://localhost:5000/api/videos/${id}/like`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      fetchVideo();
+    } catch (error) {
+      console.error(error);
+      alert("Unable to like video.");
+    }
+  };
+
+  const handleDislike = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Please sign in to dislike this video.");
+        return;
+      }
+
+      await axios.post(
+        `http://localhost:5000/api/videos/${id}/dislike`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      fetchVideo();
+    } catch (error) {
+      console.error(error);
+      alert("Unable to dislike video.");
+    }
+  };
 
   if (loading) {
     return (
@@ -84,8 +128,17 @@ function VideoPlayer() {
       </p>
 
       <p>
-        <strong>Views:</strong> {video.views}
-      </p>
+        <strong>Views:</strong> {video.views}</p>
+
+      <div className="video-actions">
+        <button onClick={handleLike}>
+          👍 Like {video.likes}
+        </button>
+
+        <button onClick={handleDislike}>
+          👎 Dislike {video.dislikes}
+        </button>
+      </div>
 
       <div className="video-description">
         <h3>Description</h3>
