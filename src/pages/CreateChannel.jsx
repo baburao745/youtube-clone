@@ -14,7 +14,6 @@ function CreateChannel() {
 
   const handleCreateChannel = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (!token) {
@@ -33,6 +32,16 @@ function CreateChannel() {
       return;
     }
 
+    if (name.trim().length > 50) {
+      setError("Channel name cannot exceed 50 characters.");
+      return;
+    }
+
+    if (description.trim().length > 500) {
+      setError("Description cannot exceed 500 characters.");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -40,19 +49,18 @@ function CreateChannel() {
         "http://localhost:5000/api/channels",
         {
           name: name.trim(),
-          description: description.trim()
+          description: description.trim(),
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
       alert("Channel created successfully!");
 
-      const channel =
-        response.data.channel || response.data;
+      const channel = response.data.channel || response.data;
 
       navigate(`/channel/${channel._id}`);
     } catch (error) {
@@ -60,7 +68,7 @@ function CreateChannel() {
 
       setError(
         error.response?.data?.message ||
-          "Unable to create channel."
+          "Unable to create channel. Please try again."
       );
     } finally {
       setLoading(false);
@@ -69,49 +77,36 @@ function CreateChannel() {
 
   return (
     <div className="create-channel-page">
-
       <div className="create-channel-box">
-
         <h1>Create Your Channel</h1>
 
-        <p>
-          Create your own YouTube Clone channel
-        </p>
+        <p>Create your own YouTube Clone channel</p>
 
-        {error && (
-          <div className="auth-error">
-            {error}
-          </div>
-        )}
+        {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleCreateChannel}>
-
           <input
             type="text"
             placeholder="Channel name"
             value={name}
-            onChange={(e) =>
-              setName(e.target.value)
-            }
+            maxLength={50}
+            onChange={(e) => setName(e.target.value)}
           />
 
           <textarea
             placeholder="Channel description"
             value={description}
-            onChange={(e) =>
-              setDescription(e.target.value)
-            }
+            maxLength={500}
+            onChange={(e) => setDescription(e.target.value)}
           />
 
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Creating Channel..."
-              : "Create Channel"}
-          </button>
+          <small>
+            {description.length}/500 characters
+          </small>
 
+          <button type="submit" disabled={loading}>
+            {loading ? "Creating Channel..." : "Create Channel"}
+          </button>
         </form>
 
         <button
@@ -120,9 +115,7 @@ function CreateChannel() {
         >
           Back to Home
         </button>
-
       </div>
-
     </div>
   );
 }
