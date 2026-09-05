@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 import CategoryFilter from "../components/CategoryFilter";
 import VideoGrid from "../components/VideoGrid";
 
 function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [backendVideos, setBackendVideos] = useState([]);
 
-  const videos = [
+  const sampleVideos = [
     {
       id: 1,
       title: "Learn React JS in One Hour",
@@ -73,6 +76,35 @@ function Home() {
     },
   ];
 
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/videos"
+        );
+
+        const data = response.data.videos || response.data;
+
+        const convertedVideos = data.map((video) => ({
+          id: video._id,
+          title: video.title,
+          channel: video.channel?.name || "Unknown Channel",
+          views: video.views,
+          category: video.category || "Other",
+          thumbnail: video.thumbnailUrl,
+        }));
+
+        setBackendVideos(convertedVideos);
+      } catch (error) {
+        console.error("Unable to load backend videos:", error);
+      }
+    };
+
+    fetchVideos();
+  }, []);
+
+  const videos = [...sampleVideos, ...backendVideos];
+
   const filteredVideos = videos.filter((video) => {
     const matchesSearch = video.title
       .toLowerCase()
@@ -104,7 +136,9 @@ function Home() {
       <VideoGrid videos={filteredVideos} />
 
       {filteredVideos.length === 0 && (
-        <p className="no-results">No videos found.</p>
+        <p className="no-results">
+          No videos found.
+        </p>
       )}
     </div>
   );
